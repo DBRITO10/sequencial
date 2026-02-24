@@ -30,7 +30,7 @@
         
         h1 { background: var(--red); color: white; text-align: center; padding: 15px; border-radius: 4px; margin: 0 0 20px 0; font-size: 20px; text-transform: uppercase; }
 
-        /* Dashboard Profissional com dois gráficos */
+        /* Melhoria do Dashboard para 2 gráficos */
         .dashboard { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
         .dashboard-row { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; width: 100%; }
         .chart-box { flex: 1; min-width: 300px; max-width: 450px; height: 320px; }
@@ -38,14 +38,13 @@
         #totalVisual { 
             font-size: 18px; font-weight: bold; color: var(--red); 
             margin: 20px auto 0; border: 2px solid var(--red); 
-            padding: 12px 30px; border-radius: 50px; background: #fff; 
+            padding: 10px 25px; border-radius: 50px; background: #fff; 
             text-align: center; max-width: fit-content;
         }
 
         .toolbar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 15px; align-items: center; }
         #mainSearch { padding: 10px; border: 1px solid #ccc; border-radius: 6px; width: 220px; outline: none; }
         
-        /* Dropdown e Botões */
         .dropdown { position: relative; display: inline-block; }
         .btn-share { background: #1E90FF; color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .dropdown-content { 
@@ -60,38 +59,46 @@
         }
         .dropdown-content button:hover { background-color: #f1f1f1; }
 
-        /* Estilização da Tabela e Header Fixo */
         .table-container { background: white; padding: 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow-x: auto; }
+        
+        /* Correção das setas de ordenação e alinhamento fixo */
         table.dataTable thead th { 
             background: var(--red) !important; color: white !important; 
-            text-align: left !important; padding: 12px 35px 12px 10px !important;
+            text-align: center !important; padding: 12px 30px 12px 10px !important;
             border: 1px solid var(--dark-red) !important; font-size: 13px;
-            position: relative; white-space: nowrap;
+            position: relative; /* Base para o posicionamento das setas */
         }
-        /* Fixar setas de ordenação */
+        
+        /* Garante que as setas do DataTable não "empurrem" o texto */
         table.dataTable thead .sorting::after, 
         table.dataTable thead .sorting_asc::after, 
         table.dataTable thead .sorting_desc::after { 
-            right: 8px !important; opacity: 0.8 !important; 
+            right: 8px !important; 
         }
 
         .filter-btn { 
-            width: 90%; margin-top: 5px; padding: 4px; font-size: 10px; 
+            width: 90%; margin-top: 5px; padding: 3px; font-size: 9px; 
             background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); 
             border-radius: 3px; cursor: pointer; font-weight: bold;
         }
         .filter-applied { background: #FFD700 !important; color: #000 !important; }
 
+        table.dataTable tbody td { border: 1px solid #dee2e6 !important; text-align: center !important; padding: 10px !important; font-size: 13px; }
+        .grupo-par { background-color: #ffffff !important; }
+        .grupo-impar { background-color: #f8f9fa !important; }
+
         .pill { padding: 5px 12px; border-radius: 15px; font-size: 11px; font-weight: bold; display: inline-block; min-width: 95px; text-transform: uppercase; }
 
-        /* Modal e Itens de Filtro Relacional */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; display: none; justify-content: center; align-items: center; }
-        .modal-content { background: white; width: 350px; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
-        .modal-header { background: var(--red); color: white; padding: 15px; font-weight: bold; text-align: center; }
-        .modal-footer { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 15px; background: #f1f1f1; }
-        
+        /* Estilo para itens desativados no modal */
         .filter-item-disabled { background: #f9f9f9; color: #bbb; cursor: not-allowed !important; }
         .filter-item-disabled input { opacity: 0.5; pointer-events: none; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; display: none; justify-content: center; align-items: center; }
+        .modal-content { background: white; width: 340px; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
+        .modal-header { background: var(--red); color: white; padding: 15px; font-weight: bold; text-align: center; }
+        .modal-footer { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 15px; background: #f1f1f1; }
+        .modal-footer button { padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; border: 1px solid #ccc; }
+        .btn-aplicar { background: var(--red); color: white; border: none !important; grid-column: span 2; }
     </style>
 </head>
 <body>
@@ -138,11 +145,13 @@
 <div id="modalFiltro" class="modal-overlay">
     <div class="modal-content">
         <div class="modal-header" id="modalTitle">FILTRAR COLUNA</div>
-        <div id="listCheckboxes" style="max-height: 400px; overflow-y: auto; padding: 5px;"></div>
+        <div class="modal-body" id="listCheckboxes" style="max-height: 350px; overflow-y: auto; padding: 10px;"></div>
         <div class="modal-footer">
             <button onclick="limparFiltroColuna()">LIMPAR</button>
             <button onclick="$('#modalFiltro').hide()">FECHAR</button>
-            <button class="btn-aplicar" style="background:var(--red); color:white; grid-column: span 2;" onclick="aplicarFiltro()">APLICAR FILTRO</button>
+            <button onclick="toggleChecks(true)">TODOS</button>
+            <button onclick="toggleChecks(false)">NENHUM</button>              
+            <button class="btn-aplicar" onclick="aplicarFiltro()">APLICAR FILTRO</button>
         </div>
     </div>
 </div>
@@ -166,7 +175,7 @@ $(document).ready(function() {
     });
 
     $("#btnShare").on("click", function(e) { e.stopPropagation(); $("#dropContent").toggleClass("show"); });
-    $(document).on("click", function() { $("#dropContent").removeClass("show"); });
+    $(document).on("click", function(e) { if (!$(e.target).closest(".dropdown").length) $("#dropContent").removeClass("show"); });
 });
 
 function inicializarPagina(dados) {
@@ -218,7 +227,7 @@ function inicializarPagina(dados) {
     });
 
     table = $('#tabelaExp').DataTable({ 
-        paging: false, info: false, dom: 'rt', scrollX: true, destroy: true, ordering: true
+        paging: false, info: false, dom: 'rt', scrollX: true, destroy: true, ordering: true, orderCellsTop: true
     });
 
     $('#mainSearch').on('keyup', function() { table.search(this.value).draw(); updateDashboard(); });
@@ -238,14 +247,15 @@ function updateDashboard() {
         totalExpedicoes++; 
         let qtdVal = $(this).find('td:eq(0)').text().trim();
         let status = $(this).find('td:eq(7)').text().trim();
-        let veic = $(this).find('td:eq(9)').text().trim();
+        let veiculo = $(this).find('td:eq(9)').text().trim();
         
         if (qtdVal !== "" && !isNaN(qtdVal)) {
             if (qtdVal.includes("-")) {
                 totalComps++;
             } else if (!idsCargasUnicas.has(qtdVal)) {
                 idsCargasUnicas.add(qtdVal);
-                statsVeic[veic] = (statsVeic[veic] || 0) + 1;
+                // Gráfico de veículos baseado em cargas únicas
+                statsVeic[veiculo] = (statsVeic[veiculo] || 0) + 1;
             }
         }
         if (status) statsStatus[status] = (statsStatus[status] || 0) + 1;
@@ -258,7 +268,7 @@ function updateDashboard() {
         </div>
     `);
 
-    // Atualiza botões de filtro
+    // Botões de Ativo/Filtrar
     colunas.forEach((_, i) => {
         const memory = localStorage.getItem(`exp_filt_${i}`);
         $(`#fbtn-${i}`).toggleClass("filter-applied", !!(memory && JSON.parse(memory).length > 0))
@@ -284,7 +294,7 @@ function updateDashboard() {
             labels: Object.keys(statsVeic).map(k => `${k}: ${statsVeic[k]}`),
             datasets: [{ data: Object.values(statsVeic), backgroundColor: Object.keys(statsVeic).map(k => coresVeic[k] || "#ccc") }]
         },
-        options: { maintainAspectRatio: false, plugins: { legend: { position: 'right' }, title: { display: true, text: 'VEÍCULOS (CARGAS ÚNICAS)' } } }
+        options: { maintainAspectRatio: false, plugins: { legend: { position: 'right' }, title: { display: true, text: 'VEÍCULOS (POR CARGA)' } } }
     });
 }
 
@@ -292,25 +302,24 @@ function openModal(idx, title) {
     curIdx = idx;
     $("#modalTitle").text(title);
     
+    // Filtro inteligente: pega o que existe na coluna inteira vs o que está visível agora
     const allUnique = table.column(idx).data().unique().sort().toArray().map(v => $(`<span>${v}</span>`).text().trim()).filter(v => v);
     const visibleNow = table.column(idx, {search: 'applied'}).data().unique().toArray().map(v => $(`<span>${v}</span>`).text().trim());
     const salvos = JSON.parse(localStorage.getItem(`exp_filt_${idx}`)) || [];
     
     const list = $("#listCheckboxes").empty();
-    
-    // Itens Disponíveis primeiro, depois bloqueados
     const disponiveis = allUnique.filter(v => visibleNow.includes(v));
     const bloqueados = allUnique.filter(v => !visibleNow.includes(v));
 
-    const criarItem = (v, isBlocked) => {
+    const renderItem = (v, isBlocked) => {
         let checked = (salvos.length === 0 || salvos.includes(v)) ? "checked" : "";
-        return `<label style="display:block; padding:10px; border-bottom:1px solid #eee;" class="${isBlocked ? 'filter-item-disabled' : ''}">
+        return `<label style="display:block; padding:8px; border-bottom:1px solid #eee; cursor:pointer;" class="${isBlocked ? 'filter-item-disabled' : ''}">
             <input type="checkbox" value="${v}" ${checked} ${isBlocked ? 'disabled' : ''}> ${v}
         </label>`;
     };
 
-    disponiveis.forEach(v => list.append(criarItem(v, false)));
-    bloqueados.forEach(v => list.append(criarItem(v, true)));
+    disponiveis.forEach(v => list.append(renderItem(v, false)));
+    bloqueados.forEach(v => list.append(renderItem(v, true)));
     
     $("#modalFiltro").css("display", "flex");
 }
@@ -360,10 +369,10 @@ function exportarPDF() {
 
     doc.autoTable({
         startY: 35, head: [colunas.slice(1)], body: bodyData,
-        styles: { fontSize: 7, halign: 'center' },
+        styles: { fontSize: 8, halign: 'center' },
         headStyles: { fillColor: [178, 34, 34] },
         didParseCell: function(data) {
-            if(data.section === 'body' && data.column.index === 2) { // Placa
+            if(data.section === 'body' && data.column.index === 2) { // Placa Vermelha
                 const html = table.cell(data.row.index, 3).node().innerHTML;
                 if(html.includes('color:red')) { data.cell.styles.textColor = [255, 0, 0]; data.cell.styles.fontStyle = 'bold'; }
             }
@@ -377,6 +386,7 @@ function exportarExcel() {
     XLSX.writeFile(wb, "Expedicao_Simonetti.xlsx");
 }
 
+function toggleChecks(b) { $("#listCheckboxes input:not(:disabled)").prop("checked", b); }
 function fazerLogoff() { localStorage.clear(); window.location.href = "login.html"; }
 </script>
 </body>
