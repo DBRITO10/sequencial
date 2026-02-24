@@ -278,7 +278,7 @@ function aplicarFiltro() {
 }
 
 function limparFiltroColuna() { 
-    localStorage.removeItem(`hint_filt_${curIdx}`); 
+    localStorage.removeItem(`hist_filt_${curIdx}`); 
     table.column(curIdx).search('').draw(); 
     $("#modalFiltro").hide(); 
     updateDashboard(); 
