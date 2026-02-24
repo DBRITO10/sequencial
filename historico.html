@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8" />
-    <title>HISTÓRICO SIMONETTI - OFICIAL</title>
+    <title>EXPEDIÇÃO SIMONETTI - OFICIAL</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -17,9 +17,9 @@
 
     <style>
         :root { 
-            --blue: #003366; 
-            --dark-blue: #002244;
-            --user-bar-bg: #004080;
+            --red: #B22222; 
+            --dark-red: #8B0000;
+            --user-bar-bg: #d32f2f;
             --bg: #f8f9fa; 
         }
         body { background: var(--bg); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; }
@@ -28,15 +28,15 @@
         .back-area { display: flex; align-items: center; gap: 15px; }
         .back-arrow { cursor: pointer; font-size: 24px; text-decoration: none; color: white; }
         
-        h1 { background: var(--blue); color: white; text-align: center; padding: 15px; border-radius: 4px; margin: 0 0 20px 0; font-size: 20px; text-transform: uppercase; }
+        h1 { background: var(--red); color: white; text-align: center; padding: 15px; border-radius: 4px; margin: 0 0 20px 0; font-size: 20px; text-transform: uppercase; }
 
         .dashboard { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: center; }
         .dashboard-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; width: 100%; }
         .chart-box { flex: 1; min-width: 300px; max-width: 450px; height: 300px; }
         
         #totalVisual { 
-            font-size: 18px; font-weight: bold; color: var(--blue); 
-            margin: 15px auto 0; border: 2px solid var(--blue); 
+            font-size: 18px; font-weight: bold; color: var(--red); 
+            margin: 15px auto 0; border: 2px solid var(--red); 
             padding: 10px 25px; border-radius: 50px; background: #fff; 
             display: inline-block;
         }
@@ -44,7 +44,18 @@
         .toolbar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 15px; align-items: center; }
         #mainSearch { padding: 10px; border: 1px solid #ccc; border-radius: 6px; width: 220px; outline: none; }
         
-        .btn-share { background: #28a745; color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-share { background: #1E90FF; color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .dropdown { position: relative; display: inline-block; }
+        .dropdown-content { 
+            display: none; position: absolute; right: 0; background-color: #ffffff; 
+            min-width: 200px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2); 
+            z-index: 1000; border-radius: 6px; border: 1px solid #ddd;
+        }
+        .dropdown-content.show { display: block; }
+        .dropdown-content button { 
+            color: #333; padding: 12px 16px; text-decoration: none; display: block; 
+            width: 100%; border: none; background: none; text-align: left; cursor: pointer; border-bottom: 1px solid #eee;
+        }
 
         .table-container { background: white; padding: 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow-x: auto; }
         
@@ -52,11 +63,11 @@
         table.dataTable { width: 100% !important; border-collapse: collapse !important; margin-top: 0 !important; }
         
         table.dataTable thead th { 
-            background: var(--blue) !important; 
+            background: var(--red) !important; 
             color: white !important; 
             text-align: center !important; 
-            padding: 10px 18px 10px 5px !important; /* Espaço para a seta */
-            border: 1px solid var(--dark-blue) !important; 
+            padding: 10px 18px 10px 5px !important; /* Espaço extra na direita para a seta */
+            border: 1px solid var(--dark-red) !important; 
             font-size: 12px;
             text-transform: uppercase;
             position: relative;
@@ -67,9 +78,9 @@
         table.dataTable thead .sorting:after,
         table.dataTable thead .sorting_asc:after,
         table.dataTable thead .sorting_desc:after {
-            right: 4px !important;
+            right: 2px !important;
             content: "↕" !important;
-            opacity: 0.6 !important;
+            opacity: 0.8 !important;
             font-size: 14px !important;
         }
         table.dataTable thead .sorting_asc:after { content: "↑" !important; opacity: 1 !important; }
@@ -83,7 +94,7 @@
         .col-hidden { display: none !important; }
 
         .filter-btn { 
-            width: 90%; 
+            width: 95%; 
             margin: 4px auto 0; 
             padding: 4px 0; 
             font-size: 10px; 
@@ -102,7 +113,7 @@
 
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; display: none; justify-content: center; align-items: center; }
         .modal-content { background: white; width: 320px; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
-        .modal-header { background: var(--blue); color: white; padding: 15px; font-weight: bold; text-align: center; }
+        .modal-header { background: var(--red); color: white; padding: 15px; font-weight: bold; text-align: center; }
         .modal-footer { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 15px; background: #f1f1f1; }
     </style>
 </head>
@@ -113,7 +124,7 @@
     <button onclick="fazerLogoff()" style="background:transparent; color:white; border:1px solid #fff; padding:6px 15px; border-radius:4px; cursor:pointer; font-weight:bold;">SAIR</button>
 </div>
 
-<h1>HISTÓRICO_EXPEDIÇÃO SIMONETTI</h1>
+<h1>EXPEDIÇÃO_MÓVEIS SIMONETTI</h1>
 
 <div class="dashboard">
     <div class="dashboard-row">
@@ -124,37 +135,41 @@
 </div>
 
 <div class="toolbar">
-    <input type="text" id="mainSearch" placeholder="🔍 Buscar no histórico...">
-    <button class="btn-share" onclick="exportarPDF()">📄 EXPORTAR PDF</button>
-    <button class="btn-share" style="background:#007bff" onclick="exportarExcel()">📊 EXCEL</button>
+    <input type="text" id="mainSearch" placeholder="🔍 Buscar na tabela...">
+    <div class="dropdown">
+        <button class="btn-share" id="btnShare">COMPARTILHAR ▼</button>
+        <div class="dropdown-content" id="dropContent">
+            <button onclick="exportarPDF()">📄 PDF Profissional (MS)</button>
+            <button onclick="exportarExcel()">📊 Planilha Excel</button>
+        </div>
+    </div>
 </div>
 
 <div class="table-container">
     <table id="tabelaExp" class="display nowrap">
         <thead>
             <tr id="headerRow"></tr>
-        </thead>
+            </thead>
         <tbody></tbody>
     </table>
 </div>
 
 <div id="modalFiltro" class="modal-overlay">
     <div class="modal-content">
-        <div class="modal-header" id="modalTitle">FILTRAR</div>
+        <div class="modal-header" id="modalTitle">FILTRAR COLUNA</div>
         <div class="modal-body" id="listCheckboxes" style="max-height: 300px; overflow-y: auto; padding: 10px;"></div>
         <div class="modal-footer">
             <button onclick="limparFiltroColuna()">LIMPAR</button>
             <button onclick="$('#modalFiltro').hide()">FECHAR</button>
             <button onclick="toggleChecks(true)">TODOS</button>
             <button onclick="toggleChecks(false)">NENHUM</button>              
-            <button class="btn-aplicar" onclick="aplicarFiltro()" style="grid-column: span 2; background: var(--blue); color: white; border: none; padding: 10px; border-radius: 5px; font-weight: bold;">APLICAR</button>
+            <button class="btn-aplicar" onclick="aplicarFiltro()" style="grid-column: span 2; background: var(--red); color: white; border: none; padding: 10px; border-radius: 5px; font-weight: bold;">APLICAR</button>
         </div>
     </div>
 </div>
 
 <script>
-// URL original do histórico (gid=1152869502)
-const csvUrl = "https://docs.google.com/spreadsheets/d/1-t9-DE1erEwcgZWVHMHq5JWBqWYAnZvh-_01__3fHno/export?format=csv&gid=1152869502";
+const csvUrl = "https://docs.google.com/spreadsheets/d/1-t9-DE1erEwcgZWVHMHq5JWBqWYAnZvh-_01__3fHno/export?format=csv&gid=804780494";
 const colunas = ["QTD", "DATA", "EXPEDIÇÃO", "PLACA", "CENTRAL", "DESTINO", "BOX", "STATUS", "CONFERENTE", "VEICULO", "PESO", "CARREGAMENTO"];
 const coresStatus = { "EM SEPARAÇÃO": "#FF8C00", "CARREGADO": "#0055b3", "FINALIZADO": "#0b6631", "CANCELADA": "#b30000" };
 const coresVeic = { "CARRETA": "#006633", "TRUCK": "#4682B4", "3/4": "#6A5ACD", "PEQUENO": "#6A5ACD", "TOCO": "#8B4513", "RETIRADA": "#DC143C" };
@@ -162,13 +177,16 @@ const coresVeic = { "CARRETA": "#006633", "TRUCK": "#4682B4", "3/4": "#6A5ACD", 
 let table, chartStatus, chartVeiculo, curIdx;
 
 $(document).ready(function() {
-    $("#userName").text("Histórico: " + (localStorage.getItem("username") || "Operador"));
+    $("#userName").text("Bem-vindo, " + (localStorage.getItem("username") || "Operador"));
     Papa.parse(csvUrl, { download: true, header: true, skipEmptyLines: true, complete: res => inicializarPagina(res.data) });
+    $("#btnShare").click(e => { e.stopPropagation(); $("#dropContent").toggleClass("show"); });
+    $(document).click(() => $("#dropContent").removeClass("show"));
 });
 
 function inicializarPagina(dados) {
     const h = $("#headerRow").empty();
     colunas.forEach((c, i) => {
+        // Agora o botão de filtro fica dentro da mesma célula do nome da coluna para economizar espaço
         h.append(`
             <th class="${i===0?'col-hidden':''}">
                 <div>${c}</div>
@@ -197,7 +215,7 @@ function inicializarPagina(dados) {
             <td>${r.BOX || ""}</td>
             <td><span class="pill" style="background:${coresStatus[st] || '#ccc'}">${st}</span></td>
             <td>${r.CONFERENTE || ""}</td>            
-            <td><span class="pill" style="background:${coresVeic[vc] || '#eee'}; border:1px solid #ccc; color:#333">${vc}</span></td>
+            <td><span class="pill" style="background:${coresVeic[vc] || '#eee'}; border:1px solid #ccc">${vc}</span></td>
             <td>${r.PESO || ""}</td>
             <td>${r.CARREGAMENTO || ""}</td>            
         </tr>`);
@@ -214,54 +232,64 @@ function inicializarPagina(dados) {
     });
 
     $('#mainSearch').on('keyup', function() { table.search(this.value).draw(); updateDashboard(); });
+    restaurarFiltrosPermanentes();
     updateDashboard();
 }
 
 function openModal(idx, title) {
     curIdx = idx; 
     $("#modalTitle").text(title);
-    
-    // Filtro Cascata
     const allUnique = table.column(idx, { filter: 'none' }).data().unique().sort().toArray().map(v => v.replace(/<[^>]*>/g, "").trim()).filter(v => v !== "");
     const currentViewUnique = table.column(idx, { filter: 'applied' }).data().unique().toArray().map(v => v.replace(/<[^>]*>/g, "").trim());
     const list = $("#listCheckboxes").empty();
-    
+    const salvos = JSON.parse(localStorage.getItem(`exp_filt_${idx}`)) || [];
+
     let disponiveis = allUnique.filter(v => currentViewUnique.includes(v));
     let indisponiveis = allUnique.filter(v => !currentViewUnique.includes(v));
 
     const criarItem = (v, isDisabled) => {
+        const isChecked = salvos.length === 0 || salvos.includes(v);
+        const classDisabled = isDisabled ? 'item-disabled' : '';
         list.append(`
-            <label class="${isDisabled ? 'item-disabled' : ''}" style="display:block; padding:8px; border-bottom:1px solid #eee; cursor:pointer;">
-                <input type="checkbox" value="${v}" checked> ${v}
+            <label class="${classDisabled}" style="display:block; padding:8px; border-bottom:1px solid #eee; cursor:pointer;">
+                <input type="checkbox" value="${v}" ${isChecked ? "checked" : ""}> ${v}
             </label>`);
     };
 
     disponiveis.forEach(v => criarItem(v, false));
     if(indisponiveis.length > 0) {
-        list.append(`<div style="background:#f4f4f4; padding:5px; font-size:10px; font-weight:bold; text-align:center; color:#666;">NÃO DISPONÍVEIS NO FILTRO ATUAL</div>`);
+        list.append(`<div style="background:#f4f4f4; padding:5px; font-size:10px; font-weight:bold; text-align:center; color:#666;">INDISPONÍVEIS NO FILTRO ATUAL</div>`);
         indisponiveis.forEach(v => criarItem(v, true));
     }
-
     $("#modalFiltro").css("display", "flex");
 }
 
 function aplicarFiltro() {
     const sel = $("#listCheckboxes input:checked").map(function(){ return this.value; }).get();
     const totalItens = $("#listCheckboxes input").length;
-
     if(sel.length === totalItens) {
-        table.column(curIdx).search('').draw();
+        limparFiltroColuna();
     } else {
         table.column(curIdx).search(sel.length ? sel.map(v => '^' + $.fn.dataTable.util.escapeRegex(v) + '$').join('|') : 'NONE_SELECTED', true, false).draw();
+        localStorage.setItem(`exp_filt_${curIdx}`, JSON.stringify(sel));
+        $("#modalFiltro").hide(); 
+        updateDashboard();
     }
-    $("#modalFiltro").hide(); 
-    updateDashboard();
 }
 
 function limparFiltroColuna() { 
+    localStorage.removeItem(`exp_filt_${curIdx}`); 
     table.column(curIdx).search('').draw(); 
     $("#modalFiltro").hide(); 
     updateDashboard(); 
+}
+
+function restaurarFiltrosPermanentes() { 
+    colunas.forEach((_, i) => { 
+        let m = JSON.parse(localStorage.getItem(`exp_filt_${i}`)); 
+        if(m && m.length > 0) table.column(i).search(m.map(v => '^'+$.fn.dataTable.util.escapeRegex(v)+'$').join('|'), true, false); 
+    }); 
+    table.draw(); 
 }
 
 function updateDashboard() {
@@ -282,50 +310,67 @@ function updateDashboard() {
         if (st) sStat[st] = (sStat[st] || 0) + 1;
     });
 
-    $("#totalVisual").html(`Cargas: ${idsCargas.size} | Expedições: ${exped}`);
+    $("#totalVisual").html(`Cargas: ${idsCargas.size} ${comps > 0 ? '+ Comp(' + comps + ')' : ''} | Expedições: ${exped}`);
 
     if(chartStatus) chartStatus.destroy();
     chartStatus = new Chart(document.getElementById('statusChart'), {
         type: 'pie',
         data: { labels: Object.keys(sStat).map(k => `${k}: ${sStat[k]}`), datasets: [{ data: Object.values(sStat), backgroundColor: Object.keys(sStat).map(k => coresStatus[k] || "#ccc") }] },
-        options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'RESUMO STATUS' } } }
+        options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'STATUS GERAL' }, legend: { position: 'right' } } }
     });
 
     if(chartVeiculo) chartVeiculo.destroy();
     chartVeiculo = new Chart(document.getElementById('veiculoChart'), {
         type: 'doughnut',
         data: { labels: Object.keys(vStat).map(k => `${k}: ${vStat[k]}`), datasets: [{ data: Object.values(vStat), backgroundColor: Object.keys(vStat).map(k => coresVeic[k] || "#ccc") }] },
-        options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'VEÍCULOS' } } }
+        options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'VEÍCULOS (CARGAS)' }, legend: { position: 'right' } } }
     });
 
     colunas.forEach((_, i) => {
-        let val = table.column(i).search();
-        $(`#fbtn-${i}`).toggleClass("filter-applied", !!val).text(val ? "ATIVO" : "FILTRAR");
+        let mem = localStorage.getItem(`hist_filt_${i}`);
+        $(`#fbtn-${i}`).toggleClass("filter-applied", !!(mem && JSON.parse(mem).length > 0)).text(mem && JSON.parse(mem).length > 0 ? "ATIVO" : "FILTRAR");
     });
 }
 
 function exportarPDF() {
     const { jsPDF } = window.jspdf; const doc = new jsPDF('l', 'mm', 'a4');
     const rows = table.rows({ search: 'applied' }).nodes().to$();
-    doc.setFillColor(0, 51, 102); doc.rect(0, 0, 297, 20, 'F');
-    doc.setTextColor(255, 255, 255); doc.setFontSize(16); doc.text("HISTÓRICO DE EXPEDIÇÃO - MÓVEIS SIMONETTI", 15, 13);
+    doc.setFillColor(178, 34, 34); doc.rect(0, 0, 297, 25, 'F');
+    doc.setTextColor(255, 255, 255); doc.setFontSize(28); doc.text("MS", 15, 17);
+    doc.setFontSize(16); doc.text("EXPEDIÇÃO_MÓVEIS SIMONETTI", 45, 15);
+    const idsPDF = new Set(); let te = 0; const resVeic = {};
+    rows.each(function() {
+        te++; let q = $(this).find('td:eq(0)').text().trim();
+        let v = $(this).find('td:eq(9)').text().trim();
+        if(!q.includes("-") && q !== "" && !isNaN(q)) { if(!idsPDF.has(q)){ idsPDF.add(q); resVeic[v] = (resVeic[v] || 0) + 1; } }
+    });
+    doc.setFontSize(10); doc.text(`CARGAS: ${idsPDF.size} | TOTAL EXPEDIÇÕES: ${te}`, 215, 15);
     const body = [];
     rows.each(function() { let r = []; $(this).find('td').each((i, td) => { if(i>0) r.push($(td).text().trim()); }); body.push(r); });
-    doc.autoTable({ 
-        startY: 25, head: [colunas.slice(1)], body: body, 
-        styles: { fontSize: 7, halign: 'center' }, 
-        headStyles: { fillColor: [0, 51, 102] },
+    doc.autoTable({
+        startY: 35, head: [colunas.slice(1)], body: body,
+        styles: { fontSize: 7, halign: 'center' },
+        headStyles: { fillColor: [178, 34, 34] },
         didParseCell: (data) => {
-            if(data.section === 'body' && data.column.index === 2) {
-                const html = table.cell(data.row.index, 3).node().innerHTML;
-                if(html.includes('color:red')) data.cell.styles.textColor = [255, 0, 0];
+            if(data.section === 'body') {
+                if(data.column.index === 2) {
+                    const original = table.cell(data.row.index, 3).node().innerHTML;
+                    if(original.includes('color:red')) data.cell.styles.textColor = [255, 0, 0];
+                }
+                if(data.column.index === 6) { let c = coresStatus[data.cell.raw.toUpperCase()]; if(c) data.cell.styles.textColor = hexToRgb(c); }
+                if(data.column.index === 8) { let c = coresVeic[data.cell.raw.toUpperCase()]; if(c) data.cell.styles.textColor = hexToRgb(c); }
             }
         }
     });
-    doc.save("Historico_Expedicao_MS.pdf");
+    let finalY = doc.lastAutoTable.finalY + 10;
+    doc.setTextColor(0, 0, 0); doc.setFontSize(11); doc.text("RESUMO DE VEÍCULOS (POR CARGA):", 15, finalY);
+    let summaryData = Object.keys(resVeic).map(k => [k, resVeic[k]]);
+    doc.autoTable({ startY: finalY + 5, head: [["VEÍCULO", "QUANTIDADE"]], body: summaryData, tableWidth: 80, styles: { fontSize: 9, halign: 'center' }, headStyles: { fillColor: [80, 80, 80] } });
+    doc.save("Histórico_Expedicao_MS.pdf");
 }
 
-function exportarExcel() { XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById('tabelaExp')), "Historico_Simonetti.xlsx"); }
+function hexToRgb(hex) { let r = parseInt(hex.slice(1,3), 16), g = parseInt(hex.slice(3,5), 16), b = parseInt(hex.slice(5,7), 16); return [r, g, b]; }
+function exportarExcel() { XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById('tabelaExp')), "Histórico_Expedicao_MS.xlsx"); }
 function toggleChecks(b) { $("#listCheckboxes input").prop("checked", b); }
 function fazerLogoff() { localStorage.clear(); window.location.href = "login.html"; }
 </script>
