@@ -30,7 +30,6 @@
         
         h1 { background: var(--red); color: white; text-align: center; padding: 15px; border-radius: 4px; margin: 0 0 20px 0; font-size: 20px; text-transform: uppercase; }
 
-        /* Dashboard para dois gráficos */
         .dashboard { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: center; }
         .dashboard-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; width: 100%; }
         .chart-box { flex: 1; min-width: 300px; max-width: 450px; height: 300px; }
@@ -60,23 +59,38 @@
 
         .table-container { background: white; padding: 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow-x: auto; }
         
-        /* Ajuste de Alinhamento Fixo */
-        table.dataTable { width: 100% !important; border-collapse: collapse !important; border: 1px solid #dee2e6 !important; }
+        /* AJUSTE FIXO HEADER E REMOÇÃO DE LINHAS VAZIAS */
+        table.dataTable { width: 100% !important; border-collapse: collapse !important; margin-top: 0 !important; }
         table.dataTable thead th { 
             background: var(--red) !important; color: white !important; 
-            text-align: center !important; padding: 12px 10px !important;
-            border: 1px solid var(--dark-red) !important; font-size: 13px;
+            text-align: center !important; padding: 8px 5px !important;
+            border: 1px solid var(--dark-red) !important; font-size: 12px;
+            position: relative;
+            vertical-align: middle;
         }
-        table.dataTable tbody td { border: 1px solid #dee2e6 !important; text-align: center !important; padding: 10px !important; font-size: 13px; }
+
+        /* Fix para setas de ordenação não "dançarem" */
+        table.dataTable thead .sorting::after, 
+        table.dataTable thead .sorting_asc::after, 
+        table.dataTable thead .sorting_desc::after { right: 2px !important; content: "" !important; }
+        table.dataTable thead .sorting::before, 
+        table.dataTable thead .sorting_asc::before, 
+        table.dataTable thead .sorting_desc::before { left: 2px !important; content: "" !important; }
+
+        table.dataTable tbody td { border: 1px solid #dee2e6 !important; text-align: center !important; padding: 8px !important; font-size: 13px; }
         
-        .col-hidden { display: none !important; } /* Classe para ocultar QTD corretamente */
+        .col-hidden { display: none !important; }
 
         .filter-btn { 
-            width: 90%; margin-top: 5px; padding: 3px; font-size: 9px; 
-            background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); 
-            border-radius: 3px; cursor: pointer; font-weight: bold;
+            width: 95%; margin: 2px auto; padding: 4px 0; font-size: 10px; 
+            background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); 
+            border-radius: 3px; cursor: pointer; font-weight: bold; display: block;
         }
         .filter-applied { background: #FFD700 !important; color: #000 !important; }
+        
+        /* Estilo para itens desativados no filtro cascata */
+        .item-disabled { color: #999; opacity: 0.6; background: #f9f9f9; }
+
         .pill { padding: 5px 12px; border-radius: 15px; font-size: 11px; font-weight: bold; display: inline-block; min-width: 95px; text-transform: uppercase; color: #fff; }
 
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; display: none; justify-content: center; align-items: center; }
@@ -156,23 +170,20 @@ function inicializarPagina(dados) {
     const h = $("#headerRow").empty(); const f = $("#filterRow").empty();
     colunas.forEach((c, i) => {
         h.append(`<th class="${i===0?'col-hidden':''}">${c}</th>`);
-        f.append(`<th class="${i===0?'col-hidden':''}"><button class="filter-btn" id="fbtn-${i}" onclick="openModal(${i},'${c}')">FILTRAR</button></th>`);
+        f.append(`<th class="${i===0?'col-hidden':''}" style="background:var(--red); border:1px solid var(--dark-red); padding:5px 0;"><button class="filter-btn" id="fbtn-${i}" onclick="openModal(${i},'${c}')">FILTRAR</button></th>`);
     });
 
     const body = $("#tabelaExp tbody").empty();
-    let ultimoID = null, classeCor = "grupo-par";
-
     dados.forEach(r => {
         let st = (r.STATUS || "").toUpperCase().trim();
         let vc = (r.VEICULO || "").toUpperCase().trim();
         let q = r.QTD || "";
         if(!st && !r.DATA) return;
-        if (q && !q.includes("-") && q !== ultimoID) { classeCor = (classeCor === "grupo-par") ? "grupo-impar" : "grupo-par"; ultimoID = q; }
 
         let placa = r.PLACA || "";
         let placaHtml = placa.includes("*") ? `<span style="color:red; font-weight:bold;">${placa.replace(/\*/g, "")}</span>` : placa;
 
-        body.append(`<tr class="${classeCor}">
+        body.append(`<tr>
             <td class="col-hidden">${q}</td>
             <td>${r.DATA || ""}</td>
             <td>${r["EXPEDIÇÃO"] || r.EXPEDICAO || ""}</td>
@@ -192,6 +203,71 @@ function inicializarPagina(dados) {
     $('#mainSearch').on('keyup', function() { table.search(this.value).draw(); updateDashboard(); });
     restaurarFiltrosPermanentes();
     updateDashboard();
+}
+
+// FILTRO CASCATA: Mostra o que existe no recorte atual primeiro
+function openModal(idx, title) {
+    curIdx = idx; 
+    $("#modalTitle").text(title);
+    
+    // Todos os itens únicos da coluna (Independente de filtro)
+    const allUnique = table.column(idx, { filter: 'none' }).data().unique().sort().toArray().map(v => v.replace(/<[^>]*>/g, "").trim()).filter(v => v !== "");
+    
+    // Itens que existem no recorte atual (Filtro Aplicado)
+    const currentViewUnique = table.column(idx, { filter: 'applied' }).data().unique().toArray().map(v => v.replace(/<[^>]*>/g, "").trim());
+    
+    const list = $("#listCheckboxes").empty();
+    const salvos = JSON.parse(localStorage.getItem(`exp_filt_${idx}`)) || [];
+
+    // Separar disponíveis de indisponíveis
+    let disponiveis = allUnique.filter(v => currentViewUnique.includes(v));
+    let indisponiveis = allUnique.filter(v => !currentViewUnique.includes(v));
+
+    const criarItem = (v, isDisabled) => {
+        const isChecked = salvos.length === 0 || salvos.includes(v);
+        const classDisabled = isDisabled ? 'item-disabled' : '';
+        list.append(`
+            <label class="${classDisabled}" style="display:block; padding:8px; border-bottom:1px solid #eee; cursor:pointer;">
+                <input type="checkbox" value="${v}" ${isChecked ? "checked" : ""}> ${v}
+            </label>`);
+    };
+
+    disponiveis.forEach(v => criarItem(v, false));
+    if(indisponiveis.length > 0) {
+        list.append(`<div style="background:#eee; padding:5px; font-size:10px; font-weight:bold; text-align:center;">NÃO DISPONÍVEIS NO RECORTE ATUAL</div>`);
+        indisponiveis.forEach(v => criarItem(v, true));
+    }
+
+    $("#modalFiltro").css("display", "flex");
+}
+
+function aplicarFiltro() {
+    const sel = $("#listCheckboxes input:checked").map(function(){ return this.value; }).get();
+    const totalItens = $("#listCheckboxes input").length;
+
+    if(sel.length === totalItens) {
+        limparFiltroColuna();
+    } else {
+        table.column(curIdx).search(sel.length ? sel.map(v => '^' + $.fn.dataTable.util.escapeRegex(v) + '$').join('|') : 'NONE_SELECTED', true, false).draw();
+        localStorage.setItem(`exp_filt_${curIdx}`, JSON.stringify(sel));
+        $("#modalFiltro").hide(); 
+        updateDashboard();
+    }
+}
+
+function limparFiltroColuna() { 
+    localStorage.removeItem(`exp_filt_${curIdx}`); 
+    table.column(curIdx).search('').draw(); 
+    $("#modalFiltro").hide(); 
+    updateDashboard(); 
+}
+
+function restaurarFiltrosPermanentes() { 
+    colunas.forEach((_, i) => { 
+        let m = JSON.parse(localStorage.getItem(`exp_filt_${i}`)); 
+        if(m && m.length > 0) table.column(i).search(m.map(v => '^'+$.fn.dataTable.util.escapeRegex(v)+'$').join('|'), true, false); 
+    }); 
+    table.draw(); 
 }
 
 function updateDashboard() {
@@ -215,7 +291,6 @@ function updateDashboard() {
 
     $("#totalVisual").html(`Cargas: ${idsCargas.size} ${comps > 0 ? '+ Comp(' + comps + ')' : ''} | Expedições: ${exped}`);
 
-    // Gráfico de Status
     if(chartStatus) chartStatus.destroy();
     chartStatus = new Chart(document.getElementById('statusChart'), {
         type: 'pie',
@@ -223,7 +298,6 @@ function updateDashboard() {
         options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'STATUS GERAL' }, legend: { position: 'right' } } }
     });
 
-    // Gráfico de Veículos (Por Carga Única)
     if(chartVeiculo) chartVeiculo.destroy();
     chartVeiculo = new Chart(document.getElementById('veiculoChart'), {
         type: 'doughnut',
@@ -236,28 +310,6 @@ function updateDashboard() {
         $(`#fbtn-${i}`).toggleClass("filter-applied", !!(mem && JSON.parse(mem).length > 0)).text(mem && JSON.parse(mem).length > 0 ? "ATIVO" : "FILTRAR");
     });
 }
-
-function openModal(idx, title) {
-    curIdx = idx; $("#modalTitle").text(title);
-    const unique = table.column(idx).data().unique().sort().toArray().map(v => $(`<span>${v}</span>`).text().trim());
-    const list = $("#listCheckboxes").empty();
-    const salvos = JSON.parse(localStorage.getItem(`exp_filt_${idx}`)) || unique;
-    unique.forEach(v => {
-        if(!v) return;
-        list.append(`<label style="display:block; padding:8px; border-bottom:1px solid #eee; cursor:pointer;"><input type="checkbox" value="${v}" ${salvos.includes(v)?"checked":""}> ${v}</label>`);
-    });
-    $("#modalFiltro").css("display", "flex");
-}
-
-function aplicarFiltro() {
-    const sel = $("#listCheckboxes input:checked").map(function(){ return this.value; }).get();
-    table.column(curIdx).search(sel.length ? sel.map(v => '^' + $.fn.dataTable.util.escapeRegex(v) + '$').join('|') : '', true, false).draw();
-    localStorage.setItem(`exp_filt_${curIdx}`, JSON.stringify(sel));
-    $("#modalFiltro").hide(); updateDashboard();
-}
-
-function limparFiltroColuna() { localStorage.removeItem(`exp_filt_${curIdx}`); table.column(curIdx).search('').draw(); $("#modalFiltro").hide(); updateDashboard(); }
-function restaurarFiltrosPermanentes() { colunas.forEach((_, i) => { let m = JSON.parse(localStorage.getItem(`exp_filt_${i}`)); if(m && m.length > 0) table.column(i).search(m.map(v => '^'+$.fn.dataTable.util.escapeRegex(v)+'$').join('|'), true, false); }); table.draw(); }
 
 function exportarPDF() {
     const { jsPDF } = window.jspdf; const doc = new jsPDF('l', 'mm', 'a4');
