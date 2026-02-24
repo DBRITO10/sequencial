@@ -388,7 +388,7 @@ function exportarPDF() {
         styles: { fontSize: 8, halign: 'center' },
         headStyles: { fillColor: [178, 34, 34] },
         didParseCell: function(data) {
-            if(data.section === 'body' && (data.column.index === 6 || data.column.index === 7)) {
+            if(data.section === 'body' && (data.column.index === 6 || data.column.index === 7 || data.column.index === 8)) {
                 const s = data.cell.raw.toUpperCase();
                 const cor = data.column.index === 6 ? coresStatus[s] : coresVeic[s];
                 if(cor) { data.cell.styles.textColor = hexToRgb(cor); data.cell.styles.fontStyle = 'bold'; }
