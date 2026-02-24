@@ -242,7 +242,7 @@ function openModal(idx, title) {
     const allUnique = table.column(idx, { filter: 'none' }).data().unique().sort().toArray().map(v => v.replace(/<[^>]*>/g, "").trim()).filter(v => v !== "");
     const currentViewUnique = table.column(idx, { filter: 'applied' }).data().unique().toArray().map(v => v.replace(/<[^>]*>/g, "").trim());
     const list = $("#listCheckboxes").empty();
-    const salvos = JSON.parse(localStorage.getItem(`exp_filt_${idx}`)) || [];
+    const salvos = JSON.parse(localStorage.getItem(`hist_filt_${idx}`)) || [];
 
     let disponiveis = allUnique.filter(v => currentViewUnique.includes(v));
     let indisponiveis = allUnique.filter(v => !currentViewUnique.includes(v));
@@ -271,14 +271,14 @@ function aplicarFiltro() {
         limparFiltroColuna();
     } else {
         table.column(curIdx).search(sel.length ? sel.map(v => '^' + $.fn.dataTable.util.escapeRegex(v) + '$').join('|') : 'NONE_SELECTED', true, false).draw();
-        localStorage.setItem(`exp_filt_${curIdx}`, JSON.stringify(sel));
+        localStorage.setItem(`hist_filt_${curIdx}`, JSON.stringify(sel));
         $("#modalFiltro").hide(); 
         updateDashboard();
     }
 }
 
 function limparFiltroColuna() { 
-    localStorage.removeItem(`exp_filt_${curIdx}`); 
+    localStorage.removeItem(`hint_filt_${curIdx}`); 
     table.column(curIdx).search('').draw(); 
     $("#modalFiltro").hide(); 
     updateDashboard(); 
@@ -286,7 +286,7 @@ function limparFiltroColuna() {
 
 function restaurarFiltrosPermanentes() { 
     colunas.forEach((_, i) => { 
-        let m = JSON.parse(localStorage.getItem(`exp_filt_${i}`)); 
+        let m = JSON.parse(localStorage.getItem(`hist_filt_${i}`)); 
         if(m && m.length > 0) table.column(i).search(m.map(v => '^'+$.fn.dataTable.util.escapeRegex(v)+'$').join('|'), true, false); 
     }); 
     table.draw(); 
