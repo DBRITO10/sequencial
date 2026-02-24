@@ -165,10 +165,10 @@
 
 <script>
 const csvUrl = "https://docs.google.com/spreadsheets/d/1-t9-DE1erEwcgZWVHMHq5JWBqWYAnZvh-_01__3fHno/export?format=csv&gid=804780494";
-const colunas = ["QTD", "DATA", "EXPEDIÇÃO", "PLACA", "CENTRAL", "DESTINO", "BOX", "STATUS", "VEICULO", "PESO", "CARREGAMENTO"];
+const colunas = ["QTD", "DATA", "EXPEDIÇÃO", "PLACA", "CENTRAL", "DESTINO", "BOX", "STATUS", "CONFERENTE", "VEICULO", "PESO", "CARREGAMENTO"];
 
 const coresStatus = { "EM SEPARAÇÃO": "#FF8C00", "CARREGADO": "#0055b3", "FINALIZADO": "#0b6631", "CANCELADA": "#b30000" };
-const coresVeic = { "CARRETA": "#006633", "TRUCK": "#4682B4", "PEQUENO": "#6A5ACD", "TOCO": "#8B4513", "RETIRADA": "#DC143C" };
+const coresVeic = { "CARRETA": "#006633", "TRUCK": "#4682B4", "3/4": "#6A5ACD", "PEQUENO": "#6A5ACD", "TOCO": "#8B4513", "RETIRADA": "#DC143C" };
 
 let table, chart, curIdx;
 
@@ -232,6 +232,7 @@ function inicializarPagina(dados) {
             <td>${r.DESTINO || ""}</td>
             <td>${r.BOX || ""}</td>
             <td><span class="pill" style="background:${coresStatus[st] || '#ccc'}; color:#fff">${st}</span></td>
+            <td>${r.CONFERENTE || ""}</td>            
             <td><span class="pill" style="background:${coresVeic[vc] || '#eee'}; color:#fff; border:1px solid #ccc">${vc}</span></td>
             <td>${r.PESO || ""}</td>
             <td>${r.CARREGAMENTO || ""}</td>            
@@ -389,7 +390,7 @@ function exportarPDF() {
         styles: { fontSize: 8, halign: 'center' },
         headStyles: { fillColor: [0, 74, 153] }, // Cabeçalho Azul no PDF
         didParseCell: function(data) {
-            if(data.section === 'body' && (data.column.index === 6 || data.column.index === 7)) {
+            if(data.section === 'body' && (data.column.index === 6 || data.column.index === 8)) {
                 const s = data.cell.raw.toUpperCase();
                 const cor = data.column.index === 6 ? coresStatus[s] : coresVeic[s];
                 if(cor) { data.cell.styles.textColor = hexToRgb(cor); data.cell.styles.fontStyle = 'bold'; }
