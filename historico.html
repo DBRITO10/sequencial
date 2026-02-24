@@ -45,23 +45,32 @@
         #mainSearch { padding: 10px; border: 1px solid #ccc; border-radius: 6px; width: 220px; outline: none; }
         
         .btn-share { background: #28a745; color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        
+
         .table-container { background: white; padding: 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow-x: auto; }
         
-        /* AJUSTE CABEÇALHO - SEM LINHAS VAZIAS E COM SETAS FIXAS */
+        /* CORREÇÃO DO CABEÇALHO - REMOVENDO LINHAS VAZIAS E FIXANDO SETAS */
         table.dataTable { width: 100% !important; border-collapse: collapse !important; margin-top: 0 !important; }
+        
         table.dataTable thead th { 
-            background: var(--blue) !important; color: white !important; 
-            text-align: center !important; padding: 10px 18px 10px 5px !important;
-            border: 1px solid var(--dark-blue) !important; font-size: 12px;
-            text-transform: uppercase; position: relative; cursor: pointer;
+            background: var(--blue) !important; 
+            color: white !important; 
+            text-align: center !important; 
+            padding: 10px 18px 10px 5px !important; /* Espaço para a seta */
+            border: 1px solid var(--dark-blue) !important; 
+            font-size: 12px;
+            text-transform: uppercase;
+            position: relative;
+            cursor: pointer;
         }
 
-        /* Setas de Ordenação Estáticas */
+        /* Ajuste Rigoroso das Setas de Ordenação */
         table.dataTable thead .sorting:after,
         table.dataTable thead .sorting_asc:after,
         table.dataTable thead .sorting_desc:after {
-            right: 4px !important; content: "↕" !important; opacity: 0.6 !important; font-size: 14px !important;
+            right: 4px !important;
+            content: "↕" !important;
+            opacity: 0.6 !important;
+            font-size: 14px !important;
         }
         table.dataTable thead .sorting_asc:after { content: "↑" !important; opacity: 1 !important; }
         table.dataTable thead .sorting_desc:after { content: "↓" !important; opacity: 1 !important; }
@@ -74,11 +83,19 @@
         .col-hidden { display: none !important; }
 
         .filter-btn { 
-            width: 90%; margin: 4px auto 0; padding: 4px 0; font-size: 10px; 
-            background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); 
-            border-radius: 3px; cursor: pointer; font-weight: bold; display: block;
+            width: 90%; 
+            margin: 4px auto 0; 
+            padding: 4px 0; 
+            font-size: 10px; 
+            background: rgba(255,255,255,0.2); 
+            color: white; 
+            border: 1px solid rgba(255,255,255,0.4); 
+            border-radius: 3px; 
+            cursor: pointer; 
+            font-weight: bold;
+            display: block;
         }
-        .filter-applied { background: #FFD700 !important; color: #000 !important; }
+        .filter-applied { background: #FFD700 !important; color: #000 !important; border: 1px solid #B8860B !important; }
         
         .item-disabled { color: #999; opacity: 0.6; background: #f9f9f9; }
         .pill { padding: 5px 12px; border-radius: 15px; font-size: 11px; font-weight: bold; display: inline-block; min-width: 95px; text-transform: uppercase; color: #fff; }
@@ -103,11 +120,11 @@
         <div class="chart-box"><canvas id="statusChart"></canvas></div>
         <div class="chart-box"><canvas id="veiculoChart"></canvas></div>
     </div>
-    <div id="totalVisual">Carregando Histórico...</div>
+    <div id="totalVisual">Calculando...</div>
 </div>
 
 <div class="toolbar">
-    <input type="text" id="mainSearch" placeholder="🔍 Filtrar histórico...">
+    <input type="text" id="mainSearch" placeholder="🔍 Buscar no histórico...">
     <button class="btn-share" onclick="exportarPDF()">📄 EXPORTAR PDF</button>
     <button class="btn-share" style="background:#007bff" onclick="exportarExcel()">📊 EXCEL</button>
 </div>
@@ -136,6 +153,7 @@
 </div>
 
 <script>
+// URL original do histórico (gid=1152869502)
 const csvUrl = "https://docs.google.com/spreadsheets/d/1-t9-DE1erEwcgZWVHMHq5JWBqWYAnZvh-_01__3fHno/export?format=csv&gid=1152869502";
 const colunas = ["QTD", "DATA", "EXPEDIÇÃO", "PLACA", "CENTRAL", "DESTINO", "BOX", "STATUS", "CONFERENTE", "VEICULO", "PESO", "CARREGAMENTO"];
 const coresStatus = { "EM SEPARAÇÃO": "#FF8C00", "CARREGADO": "#0055b3", "FINALIZADO": "#0b6631", "CANCELADA": "#b30000" };
@@ -151,10 +169,12 @@ $(document).ready(function() {
 function inicializarPagina(dados) {
     const h = $("#headerRow").empty();
     colunas.forEach((c, i) => {
-        h.append(`<th class="${i===0?'col-hidden':''}">
-            <div>${c}</div>
-            <button class="filter-btn" id="fbtn-${i}" onclick="event.stopPropagation(); openModal(${i},'${c}')">FILTRAR</button>
-        </th>`);
+        h.append(`
+            <th class="${i===0?'col-hidden':''}">
+                <div>${c}</div>
+                <button class="filter-btn" id="fbtn-${i}" onclick="event.stopPropagation(); openModal(${i},'${c}')">FILTRAR</button>
+            </th>
+        `);
     });
 
     const body = $("#tabelaExp tbody").empty();
@@ -183,13 +203,25 @@ function inicializarPagina(dados) {
         </tr>`);
     });
 
-    table = $('#tabelaExp').DataTable({ paging: false, info: false, dom: 'rt', scrollX: true, destroy: true, ordering: true });
+    table = $('#tabelaExp').DataTable({ 
+        paging: false, 
+        info: false, 
+        dom: 'rt', 
+        scrollX: true, 
+        destroy: true, 
+        ordering: true,
+        columnDefs: [{ targets: '_all', orderSequence: ['desc', 'asc'] }]
+    });
+
     $('#mainSearch').on('keyup', function() { table.search(this.value).draw(); updateDashboard(); });
     updateDashboard();
 }
 
 function openModal(idx, title) {
-    curIdx = idx; $("#modalTitle").text(title);
+    curIdx = idx; 
+    $("#modalTitle").text(title);
+    
+    // Filtro Cascata
     const allUnique = table.column(idx, { filter: 'none' }).data().unique().sort().toArray().map(v => v.replace(/<[^>]*>/g, "").trim()).filter(v => v !== "");
     const currentViewUnique = table.column(idx, { filter: 'applied' }).data().unique().toArray().map(v => v.replace(/<[^>]*>/g, "").trim());
     const list = $("#listCheckboxes").empty();
@@ -198,26 +230,39 @@ function openModal(idx, title) {
     let indisponiveis = allUnique.filter(v => !currentViewUnique.includes(v));
 
     const criarItem = (v, isDisabled) => {
-        list.append(`<label class="${isDisabled?'item-disabled':''}" style="display:block; padding:8px; border-bottom:1px solid #eee; cursor:pointer;">
-            <input type="checkbox" value="${v}" checked> ${v}
-        </label>`);
+        list.append(`
+            <label class="${isDisabled ? 'item-disabled' : ''}" style="display:block; padding:8px; border-bottom:1px solid #eee; cursor:pointer;">
+                <input type="checkbox" value="${v}" checked> ${v}
+            </label>`);
     };
 
     disponiveis.forEach(v => criarItem(v, false));
     if(indisponiveis.length > 0) {
-        list.append(`<div style="background:#eee; padding:5px; font-size:10px; font-weight:bold; text-align:center;">NÃO PRESENTES NO FILTRO ATUAL</div>`);
+        list.append(`<div style="background:#f4f4f4; padding:5px; font-size:10px; font-weight:bold; text-align:center; color:#666;">NÃO DISPONÍVEIS NO FILTRO ATUAL</div>`);
         indisponiveis.forEach(v => criarItem(v, true));
     }
+
     $("#modalFiltro").css("display", "flex");
 }
 
 function aplicarFiltro() {
     const sel = $("#listCheckboxes input:checked").map(function(){ return this.value; }).get();
-    table.column(curIdx).search(sel.length ? sel.map(v => '^' + $.fn.dataTable.util.escapeRegex(v) + '$').join('|') : 'NONE_SELECTED', true, false).draw();
-    $("#modalFiltro").hide(); updateDashboard();
+    const totalItens = $("#listCheckboxes input").length;
+
+    if(sel.length === totalItens) {
+        table.column(curIdx).search('').draw();
+    } else {
+        table.column(curIdx).search(sel.length ? sel.map(v => '^' + $.fn.dataTable.util.escapeRegex(v) + '$').join('|') : 'NONE_SELECTED', true, false).draw();
+    }
+    $("#modalFiltro").hide(); 
+    updateDashboard();
 }
 
-function limparFiltroColuna() { table.column(curIdx).search('').draw(); $("#modalFiltro").hide(); updateDashboard(); }
+function limparFiltroColuna() { 
+    table.column(curIdx).search('').draw(); 
+    $("#modalFiltro").hide(); 
+    updateDashboard(); 
+}
 
 function updateDashboard() {
     const visibleRows = table.rows({ search: 'applied' }).nodes().to$();
@@ -238,18 +283,18 @@ function updateDashboard() {
     });
 
     $("#totalVisual").html(`Cargas: ${idsCargas.size} | Expedições: ${exped}`);
-    
+
     if(chartStatus) chartStatus.destroy();
     chartStatus = new Chart(document.getElementById('statusChart'), {
         type: 'pie',
-        data: { labels: Object.keys(sStat), datasets: [{ data: Object.values(sStat), backgroundColor: Object.keys(sStat).map(k => coresStatus[k] || "#ccc") }] },
-        options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'STATUS HISTÓRICO' } } }
+        data: { labels: Object.keys(sStat).map(k => `${k}: ${sStat[k]}`), datasets: [{ data: Object.values(sStat), backgroundColor: Object.keys(sStat).map(k => coresStatus[k] || "#ccc") }] },
+        options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'RESUMO STATUS' } } }
     });
 
     if(chartVeiculo) chartVeiculo.destroy();
     chartVeiculo = new Chart(document.getElementById('veiculoChart'), {
         type: 'doughnut',
-        data: { labels: Object.keys(vStat), datasets: [{ data: Object.values(vStat), backgroundColor: Object.keys(vStat).map(k => coresVeic[k] || "#ccc") }] },
+        data: { labels: Object.keys(vStat).map(k => `${k}: ${vStat[k]}`), datasets: [{ data: Object.values(vStat), backgroundColor: Object.keys(vStat).map(k => coresVeic[k] || "#ccc") }] },
         options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'VEÍCULOS' } } }
     });
 
@@ -266,8 +311,18 @@ function exportarPDF() {
     doc.setTextColor(255, 255, 255); doc.setFontSize(16); doc.text("HISTÓRICO DE EXPEDIÇÃO - MÓVEIS SIMONETTI", 15, 13);
     const body = [];
     rows.each(function() { let r = []; $(this).find('td').each((i, td) => { if(i>0) r.push($(td).text().trim()); }); body.push(r); });
-    doc.autoTable({ startY: 25, head: [colunas.slice(1)], body: body, styles: { fontSize: 7, halign: 'center' }, headStyles: { fillColor: [0, 51, 102] } });
-    doc.save("Historico_Expedicao_Simonetti.pdf");
+    doc.autoTable({ 
+        startY: 25, head: [colunas.slice(1)], body: body, 
+        styles: { fontSize: 7, halign: 'center' }, 
+        headStyles: { fillColor: [0, 51, 102] },
+        didParseCell: (data) => {
+            if(data.section === 'body' && data.column.index === 2) {
+                const html = table.cell(data.row.index, 3).node().innerHTML;
+                if(html.includes('color:red')) data.cell.styles.textColor = [255, 0, 0];
+            }
+        }
+    });
+    doc.save("Historico_Expedicao_MS.pdf");
 }
 
 function exportarExcel() { XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById('tabelaExp')), "Historico_Simonetti.xlsx"); }
