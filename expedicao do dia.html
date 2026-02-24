@@ -222,11 +222,19 @@ function inicializarPagina(dados) {
             ultimoID = qtdVal;
         }
 
+        // LÓGICA PLACA VERMELHA (SEM ASTERISCO NA EXIBIÇÃO)
+        let placaOriginal = r.PLACA || "";
+        let placaExibicao = placaOriginal;
+        if(placaOriginal.includes("*")){
+            let placaLimpa = placaOriginal.replaceAll("*", "");
+            placaExibicao = `<span style="color:red; font-weight:bold;">${placaLimpa}</span>`;
+        }
+
         body.append(`<tr class="${classeCor}">
             <td style="display:none">${qtdVal}</td>
             <td>${r.DATA || ""}</td>
             <td>${r["EXPEDIÇÃO"] || r.EXPEDICAO || ""}</td>
-            <td>${r.PLACA || ""}</td>
+            <td>${placaExibicao}</td> 
             <td>${r.CENTRAL || ""}</td>
             <td>${r.DESTINO || ""}</td>
             <td>${r.BOX || ""}</td>
@@ -249,7 +257,7 @@ function inicializarPagina(dados) {
 
 function updateDashboard() {
     const visibleRows = table.rows({ search: 'applied' }).nodes().to$();
-    let totalCargas = 0;
+    const idsCargasUnicas = new Set(); 
     let totalComps = 0;
     let totalExpedicoes = 0;
     const statsStatus = {}; 
@@ -259,15 +267,22 @@ function updateDashboard() {
         let qtdVal = $(this).find('td:eq(0)').text().trim();
         let status = $(this).find('td:eq(7)').text().trim();
         
-        if (qtdVal.includes("-")) totalComps++;
-        else if (qtdVal !== "" && !isNaN(qtdVal)) totalCargas++;
+        if (qtdVal !== "" && !isNaN(qtdVal)) {
+            if (qtdVal.includes("-")) {
+                totalComps++;
+            } else {
+                idsCargasUnicas.add(qtdVal);
+            }
+        }
 
         if (status) statsStatus[status] = (statsStatus[status] || 0) + 1;
     });
 
+    const totalCargas = idsCargasUnicas.size;
+
     $("#totalVisual").html(`
         <div style="line-height: 1.2;">
-            <div>Total de Cargas: ${totalCargas} + complemento(${totalComps})</div>
+            <div>Total de Cargas: ${totalCargas} ${totalComps > 0 ? '+ Comp(' + totalComps + ')' : ''}</div>
             <div style="font-size: 13px; color: #666; font-weight: normal;">Total Expedições: ${totalExpedicoes}</div>
         </div>
     `);
@@ -291,7 +306,7 @@ function updateDashboard() {
         data: {
             labels: Object.keys(statsStatus).map(key => {
                 const val = statsStatus[key];
-                const pct = ((val / totalStatus) * 100).toFixed(1);
+                const pct = totalStatus > 0 ? ((val / totalStatus) * 100).toFixed(1) : 0;
                 return `${key}: ${val} (${pct}%)`;
             }),
             datasets: [{ 
@@ -365,15 +380,16 @@ function exportarPDF() {
     doc.text("MS", 15, 17);
     doc.setFontSize(16); doc.text("EXPEDIÇÃO_MÓVEIS SIMONETTI", 45, 15);
     
-    let c = 0, cp = 0, te = 0;
+    const idsPDF = new Set();
+    let cp = 0, te = 0;
     filteredRows.each(function(){ 
         let v = $(this).find('td:eq(0)').text().trim();
         te++;
-        if(v.includes("-")) cp++; else if(v !== "" && !isNaN(v)) c++;
+        if(v.includes("-")) cp++; else if(v !== "" && !isNaN(v)) idsPDF.add(v);
     });
 
     doc.setFontSize(10); 
-    doc.text(`CARGAS: ${c} + Comp(${cp})`, 210, 12);
+    doc.text(`CARGAS: ${idsPDF.size} ${cp > 0 ? '+ Comp(' + cp + ')' : ''}`, 210, 12);
     doc.text(`TOTAL EXPEDIÇÕES: ${te}`, 210, 18);
 
     const bodyData = [];
@@ -388,10 +404,21 @@ function exportarPDF() {
         styles: { fontSize: 8, halign: 'center' },
         headStyles: { fillColor: [178, 34, 34] },
         didParseCell: function(data) {
-            if(data.section === 'body' && (data.column.index === 6 || data.column.index === 7 || data.column.index === 8)) {
-                const s = data.cell.raw.toUpperCase();
-                const cor = data.column.index === 6 ? coresStatus[s] : coresVeic[s];
-                if(cor) { data.cell.styles.textColor = hexToRgb(cor); data.cell.styles.fontStyle = 'bold'; }
+            if(data.section === 'body') {
+                // Placa Vermelha no PDF (Índice 2 pois QTD foi removida)
+                if(data.column.index === 2) {
+                    const celulaOriginal = table.cell(data.row.index, 3).node();
+                    if(celulaOriginal.innerHTML.includes('color: red') || celulaOriginal.innerHTML.includes('color:red')) {
+                        data.cell.styles.textColor = [255, 0, 0];
+                        data.cell.styles.fontStyle = 'bold';
+                    }
+                }
+                // Status e Veiculo
+                if(data.column.index === 6 || data.column.index === 8) {
+                    const s = data.cell.raw.toUpperCase();
+                    const cor = data.column.index === 6 ? coresStatus[s] : coresVeic[s];
+                    if(cor) { data.cell.styles.textColor = hexToRgb(cor); data.cell.styles.fontStyle = 'bold'; }
+                }
             }
         }
     });
