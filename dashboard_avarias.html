@@ -29,14 +29,12 @@
         .table-section { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-top: 4px solid var(--red); overflow-x: auto; }
         .table-title { color: var(--red); margin-top: 0; margin-bottom: 15px; font-size: 16px; text-transform: uppercase; font-weight: bold; }
         
-        /* Cabeçalho Vermelho */
         table.dataTable thead th { background: var(--red) !important; color: white !important; text-align: center !important; font-size: 11px; text-transform: uppercase; border: 1px solid var(--dark-red) !important; padding: 12px 8px !important; }
         table.dataTable tbody td { text-align: center !important; padding: 8px !important; border: 1px solid #eee !important; font-size: 12px; }
 
         .filter-btn { width: 95%; margin: 5px auto 0; padding: 6px 0; font-size: 10px; background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); border-radius: 3px; cursor: pointer; display: block; font-weight: bold; transition: 0.3s; }
         .filter-btn.active { background: #FFD700 !important; color: #000 !important; border-color: #DAA520 !important; }
         
-        /* MODAL */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; display: none; justify-content: center; align-items: center; padding: 10px; }
         .modal-content { background: white; width: 100%; max-width: 350px; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; max-height: 90vh; }
         .modal-header { background: var(--red); color: white; padding: 15px; font-weight: bold; text-align: center; }
@@ -46,14 +44,13 @@
         .btn-modal { padding: 8px; border-radius: 4px; border: none; font-weight: bold; cursor: pointer; font-size: 12px; }
         .btn-all { background: #eee; color: #333; }
         .btn-none { background: #eee; color: #333; }
-        .btn-clear { background: #333; color: white; grid-column: span 1; }
+        .btn-clear { background: #333; color: white; }
         .btn-close { background: #666; color: white; }
         .btn-apply { background: var(--red); color: white; grid-column: span 2; padding: 12px; font-size: 14px; margin-top: 5px; }
 
         @media (max-width: 600px) {
             .header h1 { font-size: 18px; margin-top: 40px; }
             .back-btn, .exit-btn { top: 10px; }
-            .card { min-height: 250px; }
         }
     </style>
 </head>
@@ -124,6 +121,9 @@ Chart.register(ChartDataLabels);
 const csvUrl = "https://docs.google.com/spreadsheets/d/1-t9-DE1erEwcgZWVHMHq5JWBqWYAnZvh-_01__3fHno/export?format=csv&gid=804780494";
 let table, charts = {}, curIdx, totalCargasBase = 0;
 
+// Paleta de cores padrão para manter consistência entre gráficos
+const coresPadrao = ['#b30000', '#004080', '#ff6600', '#28a745', '#6f42c1', '#f39c12', '#16a085', '#2980b9'];
+
 $(document).ready(function() {
     fetchData();
 });
@@ -142,7 +142,6 @@ function fetchData() {
             const apenasAvarias = todosOsDados.filter(r => (r.AVARIA || "").toUpperCase().trim() === "SIM");
             montarTabela(apenasAvarias);
             
-            // Recuperar filtros salvos após montar a tabela
             carregarFiltrosSalvos();
             atualizarDashboards();
         }
@@ -193,13 +192,15 @@ function atualizarDashboards() {
 
     renderChart('chartVeiculos', 'pie', mapVeic);
     renderChart('chartEquipe', 'bar', mapEq);
+    
+    // Gráfico de Destinos agora usa a paleta de cores completa
     const top5 = Object.entries(mapDest).sort((a,b) => b[1] - a[1]).slice(0, 5);
-    renderChart('chartDestinos', 'bar', Object.fromEntries(top5), true);
+    renderChart('chartDestinos', 'bar', Object.fromEntries(top5));
     
     atualizarStatusBotoesFiltro();
 }
 
-function renderChart(id, type, dataObj, destaqueRed = false) {
+function renderChart(id, type, dataObj) {
     if(charts[id]) charts[id].destroy();
     const labels = Object.keys(dataObj);
     const values = Object.values(dataObj);
@@ -211,37 +212,45 @@ function renderChart(id, type, dataObj, destaqueRed = false) {
             labels: labels,
             datasets: [{
                 data: values,
-                backgroundColor: destaqueRed ? '#b30000' : ['#b30000', '#004080', '#ff6600', '#28a745', '#6f42c1', '#999']
+                backgroundColor: coresPadrao
             }]
         },
         options: {
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: type === 'pie', position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+                legend: { 
+                    display: type === 'pie', 
+                    position: 'bottom', 
+                    labels: { boxWidth: 10, font: { size: 10 } } 
+                },
                 datalabels: {
-                    color: type === 'pie' ? '#fff' : '#444',
+                    color: '#fff', // TEXTO BRANCO DENTRO DAS BARRAS/PIZZA
                     font: { weight: 'bold', size: 10 },
                     formatter: (val) => {
                         const p = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
-                        return `${val} (${p}%)`;
+                        return `${val}\n(${p}%)`;
                     }
                 }
             },
-            scales: type === 'bar' ? { y: { display: false }, x: { grid: { display: false }, ticks: { font: { size: 9 } } } } : {}
+            scales: type === 'bar' ? { 
+                y: { display: false }, 
+                x: { 
+                    grid: { display: false }, 
+                    ticks: { 
+                        color: '#000', // TEXTO PRETO NO EIXO X (NOMES)
+                        font: { weight: 'bold', size: 9 } 
+                    } 
+                } 
+            } : {}
         }
     });
 }
 
-// LÓGICA DE FILTROS MELHORADA
 function openModal(idx, title) {
     curIdx = idx;
     $("#modalTitle").text("FILTRAR: " + title);
     const list = $("#listCheckboxes").empty();
-    
-    // Pegar todos os valores únicos que existem na coluna original (sem filtros)
     const uniqueVals = table.column(idx).data().unique().sort().toArray();
-    
-    // Verificar quais estão selecionados atualmente (pelo search do DataTables)
     const currentSearch = table.column(idx).search();
     
     uniqueVals.forEach(v => {
@@ -259,16 +268,13 @@ function openModal(idx, title) {
     $("#modalFiltro").css("display", "flex");
 }
 
-function toggleAll(status) {
-    $("#listCheckboxes input").prop("checked", status);
-}
+function toggleAll(status) { $("#listCheckboxes input").prop("checked", status); }
 
 function aplicarFiltro() {
     const totalCheckboxes = $("#listCheckboxes input").length;
     const selecionados = $("#listCheckboxes input:checked").map(function(){ return this.value; }).get();
     
     if (selecionados.length === totalCheckboxes) {
-        // Se selecionou tudo, limpa o filtro da coluna
         table.column(curIdx).search("").draw();
     } else if (selecionados.length === 0) {
         table.column(curIdx).search("FORCAR_VAZIO_ABSURDO").draw();
@@ -276,7 +282,6 @@ function aplicarFiltro() {
         const regex = selecionados.map(v => '^' + $.fn.dataTable.util.escapeRegex(v) + '$').join('|');
         table.column(curIdx).search(regex, true, false).draw();
     }
-    
     salvarFiltros();
     $("#modalFiltro").hide();
 }
@@ -291,20 +296,14 @@ function atualizarStatusBotoesFiltro() {
     $(".filter-btn").each(function() {
         const col = $(this).data("col");
         const searchVal = table.column(col).search();
-        if(searchVal && searchVal !== "") {
-            $(this).addClass("active");
-        } else {
-            $(this).removeClass("active");
-        }
+        if(searchVal && searchVal !== "") $(this).addClass("active");
+        else $(this).removeClass("active");
     });
 }
 
-// PERSISTÊNCIA DE DADOS
 function salvarFiltros() {
     const filtros = [];
-    for(let i=0; i<6; i++) {
-        filtros.push(table.column(i).search());
-    }
+    for(let i=0; i<6; i++) filtros.push(table.column(i).search());
     localStorage.setItem('meusFiltrosAvarias', JSON.stringify(filtros));
 }
 
@@ -312,17 +311,12 @@ function carregarFiltrosSalvos() {
     const salvos = localStorage.getItem('meusFiltrosAvarias');
     if(salvos) {
         const filtros = JSON.parse(salvos);
-        filtros.forEach((f, i) => {
-            if(f) table.column(i).search(f, true, false);
-        });
+        filtros.forEach((f, i) => { if(f) table.column(i).search(f, true, false); });
         table.draw();
     }
 }
 
-function fazerLogoff() { 
-    localStorage.clear(); 
-    window.location.href = "login.html"; 
-}
+function fazerLogoff() { localStorage.clear(); window.location.href = "login.html"; }
 </script>
 </body>
 </html>
