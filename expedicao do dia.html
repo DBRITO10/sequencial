@@ -310,13 +310,13 @@ function updateDashboard() {
         if (st) sStat[st] = (sStat[st] || 0) + 1;
     });
 
-    $("#totalVisual").html(`Cargas: ${idsCargas.size} ${comps > 0 ? '+ Comp(' + comps + ')' : ''} | Expedições: ${exped}`);
+    $("#totalVisual").html(`CARGAS: ${idsCargas.size} ${comps > 0 ? '+ Comp(' + comps + ')' : ''} | EXPEDIÇÕES: ${exped}`);
 
     if(chartStatus) chartStatus.destroy();
     chartStatus = new Chart(document.getElementById('statusChart'), {
         type: 'pie',
         data: { labels: Object.keys(sStat).map(k => `${k}: ${sStat[k]}`), datasets: [{ data: Object.values(sStat), backgroundColor: Object.keys(sStat).map(k => coresStatus[k] || "#ccc") }] },
-        options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'STATUS GERAL' }, legend: { position: 'right' } } }
+        options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'STATUS DAS EXPEDIÇÕES' }, legend: { position: 'right' } } }
     });
 
     if(chartVeiculo) chartVeiculo.destroy();
