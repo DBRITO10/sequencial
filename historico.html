@@ -9,7 +9,6 @@
     <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 
@@ -17,10 +16,10 @@
 
     <style>
         :root { 
-            --red: #004080;        /* Azul principal */
-            --dark-red: #002d5a;   /* Azul escuro para bordas */
-            --user-bar-bg: #0056b3;/* Azul da barra de usuário */
-            --bg: #f0f4f8;         /* Fundo levemente azulado */
+            --red: #004080;        
+            --dark-red: #002d5a;   
+            --user-bar-bg: #0056b3;
+            --bg: #f0f4f8;         
         }
         body { background: var(--bg); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; }
         
@@ -31,14 +30,12 @@
         h1 { background: var(--red); color: white; text-align: center; padding: 15px; border-radius: 4px; margin: 0 0 20px 0; font-size: 20px; text-transform: uppercase; }
 
         .dashboard { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: center; }
-        .dashboard-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; width: 100%; }
-        .chart-box { flex: 1; min-width: 300px; max-width: 450px; height: 300px; }
         
         #totalVisual { 
-            font-size: 18px; font-weight: bold; color: var(--red); 
-            margin: 15px auto 0; border: 2px solid var(--red); 
-            padding: 10px 25px; border-radius: 50px; background: #fff; 
-            display: inline-block;
+            font-size: 18px; color: var(--red); 
+            margin: 0 auto; border: 2px solid var(--red); 
+            padding: 15px 25px; border-radius: 12px; background: #fff; 
+            display: inline-block; min-width: 300px;
         }
 
         .toolbar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 15px; align-items: center; }
@@ -59,14 +56,13 @@
 
         .table-container { background: white; padding: 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow-x: auto; }
         
-        /* CORREÇÃO DO CABEÇALHO - REMOVENDO LINHAS VAZIAS E FIXANDO SETAS */
         table.dataTable { width: 100% !important; border-collapse: collapse !important; margin-top: 0 !important; }
         
         table.dataTable thead th { 
             background: var(--red) !important; 
             color: white !important; 
             text-align: center !important; 
-            padding: 10px 18px 10px 5px !important; /* Espaço extra na direita para a seta */
+            padding: 10px 18px 10px 5px !important; 
             border: 1px solid var(--dark-red) !important; 
             font-size: 12px;
             text-transform: uppercase;
@@ -74,7 +70,6 @@
             cursor: pointer;
         }
 
-        /* Ajuste Rigoroso das Setas de Ordenação */
         table.dataTable thead .sorting:after,
         table.dataTable thead .sorting_asc:after,
         table.dataTable thead .sorting_desc:after {
@@ -127,11 +122,7 @@
 <h1>HISTÓRICO DE EXPEDIÇÃO</h1>
 
 <div class="dashboard">
-    <div class="dashboard-row">
-        <div class="chart-box"><canvas id="statusChart"></canvas></div>
-        <div class="chart-box"><canvas id="veiculoChart"></canvas></div>
-    </div>
-    <div id="totalVisual">Calculando...</div>
+    <div id="totalVisual">Calculando dados resumidos...</div>
 </div>
 
 <div class="toolbar">
@@ -174,7 +165,7 @@ const colunas = ["QTD", "DATA", "EXPEDIÇÃO", "PLACA", "CENTRAL", "DESTINO", "B
 const coresStatus = { "EM SEPARAÇÃO": "#FF8C00", "CARREGADO": "#0055b3", "FINALIZADO": "#0b6631", "CANCELADA": "#b30000" };
 const coresVeic = { "CARRETA": "#006633", "TRUCK": "#4682B4", "3/4": "#6A5ACD", "PEQUENO": "#6A5ACD", "TOCO": "#8B4513", "RETIRADA": "#DC143C" };
 
-let table, chartStatus, chartVeiculo, curIdx;
+let table, curIdx;
 
 $(document).ready(function() {
     $("#userName").text("Bem-vindo, " + (localStorage.getItem("username") || "Operador"));
@@ -186,7 +177,6 @@ $(document).ready(function() {
 function inicializarPagina(dados) {
     const h = $("#headerRow").empty();
     colunas.forEach((c, i) => {
-        // Agora o botão de filtro fica dentro da mesma célula do nome da coluna para economizar espaço
         h.append(`
             <th class="${i===0?'col-hidden':''}">
                 <div>${c}</div>
@@ -234,6 +224,48 @@ function inicializarPagina(dados) {
     $('#mainSearch').on('keyup', function() { table.search(this.value).draw(); updateDashboard(); });
     restaurarFiltrosPermanentes();
     updateDashboard();
+}
+
+function updateDashboard() {
+    const visibleRows = table.rows({ search: 'applied' }).nodes().to$();
+    const idsCargas = new Set(); 
+    let comps = 0, exped = 0;
+    const vStat = {};
+
+    visibleRows.each(function() {
+        exped++;
+        let q = $(this).find('td:eq(0)').text().trim();
+        let vc = $(this).find('td:eq(9)').text().trim();
+        
+        if (q !== "" && !isNaN(q)) {
+            if (q.includes("-")) {
+                comps++;
+            } else if(!idsCargas.has(q)) { 
+                idsCargas.add(q); 
+                if(vc) vStat[vc] = (vStat[vc] || 0) + 1;
+            }
+        }
+    });
+
+    // Monta o resumo de veículos por extenso
+    let resumoVeiculos = Object.keys(vStat)
+        .map(tipo => `<strong>${tipo}:</strong> ${vStat[tipo]}`)
+        .join(' | ');
+
+    $("#totalVisual").html(`
+        <div style="margin-bottom:8px;">
+            <strong>Cargas:</strong> ${idsCargas.size} ${comps > 0 ? '(+ ' + comps + ' Comp.)' : ''} | 
+            <strong>Expedições:</strong> ${exped}
+        </div>
+        <div style="font-size: 14px; color: #555; border-top: 1px solid #eee; pt-5px; margin-top:5px;">
+            ${resumoVeiculos || 'Sem veículos registrados'}
+        </div>
+    `);
+
+    colunas.forEach((_, i) => {
+        let mem = localStorage.getItem(`hist_filt_${i}`);
+        $(`#fbtn-${i}`).toggleClass("filter-applied", !!(mem && JSON.parse(mem).length > 0)).text(mem && JSON.parse(mem).length > 0 ? "ATIVO" : "FILTRAR");
+    });
 }
 
 function openModal(idx, title) {
@@ -292,50 +324,10 @@ function restaurarFiltrosPermanentes() {
     table.draw(); 
 }
 
-function updateDashboard() {
-    const visibleRows = table.rows({ search: 'applied' }).nodes().to$();
-    const idsCargas = new Set(); 
-    let comps = 0, exped = 0;
-    const sStat = {}, vStat = {};
-
-    visibleRows.each(function() {
-        exped++;
-        let q = $(this).find('td:eq(0)').text().trim();
-        let st = $(this).find('td:eq(7)').text().trim();
-        let vc = $(this).find('td:eq(9)').text().trim();
-        if (q !== "" && !isNaN(q)) {
-            if (q.includes("-")) comps++;
-            else if(!idsCargas.has(q)) { idsCargas.add(q); vStat[vc] = (vStat[vc] || 0) + 1; }
-        }
-        if (st) sStat[st] = (sStat[st] || 0) + 1;
-    });
-
-    $("#totalVisual").html(`Cargas: ${idsCargas.size} ${comps > 0 ? '+ Comp(' + comps + ')' : ''} | Expedições: ${exped}`);
-
-    if(chartStatus) chartStatus.destroy();
-    chartStatus = new Chart(document.getElementById('statusChart'), {
-        type: 'pie',
-        data: { labels: Object.keys(sStat).map(k => `${k}: ${sStat[k]}`), datasets: [{ data: Object.values(sStat), backgroundColor: Object.keys(sStat).map(k => coresStatus[k] || "#ccc") }] },
-        options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'STATUS GERAL' }, legend: { position: 'right' } } }
-    });
-
-    if(chartVeiculo) chartVeiculo.destroy();
-    chartVeiculo = new Chart(document.getElementById('veiculoChart'), {
-        type: 'doughnut',
-        data: { labels: Object.keys(vStat).map(k => `${k}: ${vStat[k]}`), datasets: [{ data: Object.values(vStat), backgroundColor: Object.keys(vStat).map(k => coresVeic[k] || "#ccc") }] },
-        options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'VEÍCULOS (CARGAS)' }, legend: { position: 'right' } } }
-    });
-
-    colunas.forEach((_, i) => {
-        let mem = localStorage.getItem(`hist_filt_${i}`);
-        $(`#fbtn-${i}`).toggleClass("filter-applied", !!(mem && JSON.parse(mem).length > 0)).text(mem && JSON.parse(mem).length > 0 ? "ATIVO" : "FILTRAR");
-    });
-}
-
 function exportarPDF() {
     const { jsPDF } = window.jspdf; const doc = new jsPDF('l', 'mm', 'a4');
     const rows = table.rows({ search: 'applied' }).nodes().to$();
-    doc.setFillColor(178, 34, 34); doc.rect(0, 0, 297, 25, 'F');
+    doc.setFillColor(0, 64, 128); doc.rect(0, 0, 297, 25, 'F');
     doc.setTextColor(255, 255, 255); doc.setFontSize(28); doc.text("MS", 15, 17);
     doc.setFontSize(16); doc.text("EXPEDIÇÃO_MÓVEIS SIMONETTI", 45, 15);
     const idsPDF = new Set(); let te = 0; const resVeic = {};
@@ -350,7 +342,7 @@ function exportarPDF() {
     doc.autoTable({
         startY: 35, head: [colunas.slice(1)], body: body,
         styles: { fontSize: 7, halign: 'center' },
-        headStyles: { fillColor: [178, 34, 34] },
+        headStyles: { fillColor: [0, 64, 128] },
         didParseCell: (data) => {
             if(data.section === 'body') {
                 if(data.column.index === 2) {
