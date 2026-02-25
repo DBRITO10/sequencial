@@ -13,34 +13,48 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css" />
 
     <style>
-        :root { --red: #b30000; --blue: #004080; --dark-blue: #002d5a; --bg: #f0f4f8; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 15px; }
+        :root { --red: #b30000; --dark-red: #8b0000; --blue: #004080; --bg: #f0f4f8; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 10px; }
         
         .header { background: var(--red); color: white; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 20px; position: relative; }
-        .back-btn { position: absolute; left: 15px; top: 18px; color: white; text-decoration: none; font-weight: bold; border: 1px solid white; padding: 5px 12px; border-radius: 4px; font-size: 13px; }
-        .exit-btn { position: absolute; right: 15px; top: 18px; color: white; background: transparent; border: 1px solid white; padding: 5px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        .back-btn { position: absolute; left: 10px; top: 18px; color: white; text-decoration: none; font-weight: bold; border: 1px solid white; padding: 5px 10px; border-radius: 4px; font-size: 12px; }
+        .exit-btn { position: absolute; right: 10px; top: 18px; color: white; background: transparent; border: 1px solid white; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; }
 
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center; min-height: 300px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; }
-        .big-number { font-size: 48px; font-weight: bold; color: var(--red); margin: 5px 0; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center; min-height: 280px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; }
+        .big-number { font-size: clamp(32px, 8vw, 48px); font-weight: bold; color: var(--red); margin: 5px 0; }
         
         canvas { max-height: 220px !important; width: 100% !important; }
 
-        .table-section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-top: 4px solid var(--red); }
-        .table-title { color: var(--red); margin-top: 0; margin-bottom: 15px; font-size: 18px; text-transform: uppercase; font-weight: bold; }
+        .table-section { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-top: 4px solid var(--red); overflow-x: auto; }
+        .table-title { color: var(--red); margin-top: 0; margin-bottom: 15px; font-size: 16px; text-transform: uppercase; font-weight: bold; }
         
-        table.dataTable thead th { background: var(--blue) !important; color: white !important; text-align: center !important; font-size: 11px; text-transform: uppercase; border: 1px solid var(--dark-blue) !important; padding: 10px !important; }
-        table.dataTable tbody td { text-align: center !important; padding: 8px !important; border: 1px solid #eee !important; font-size: 13px; }
+        /* Cabeçalho Vermelho */
+        table.dataTable thead th { background: var(--red) !important; color: white !important; text-align: center !important; font-size: 11px; text-transform: uppercase; border: 1px solid var(--dark-red) !important; padding: 12px 8px !important; }
+        table.dataTable tbody td { text-align: center !important; padding: 8px !important; border: 1px solid #eee !important; font-size: 12px; }
 
-        .filter-btn { width: 90%; margin: 5px auto 0; padding: 4px 0; font-size: 10px; background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); border-radius: 3px; cursor: pointer; display: block; font-weight: bold; }
-        .filter-btn:hover { background: var(--red); }
+        .filter-btn { width: 95%; margin: 5px auto 0; padding: 6px 0; font-size: 10px; background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); border-radius: 3px; cursor: pointer; display: block; font-weight: bold; transition: 0.3s; }
+        .filter-btn.active { background: #FFD700 !important; color: #000 !important; border-color: #DAA520 !important; }
         
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; display: none; justify-content: center; align-items: center; }
-        .modal-content { background: white; width: 320px; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
-        .modal-header { background: var(--blue); color: white; padding: 15px; font-weight: bold; text-align: center; }
-        .modal-footer { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 15px; background: #f1f1f1; }
-        .btn-aplicar { grid-column: span 2; background: var(--red); color: white; border: none; padding: 10px; border-radius: 5px; font-weight: bold; cursor: pointer; }
-        .btn-fechar { background: #666; color: white; border: none; padding: 8px; border-radius: 5px; cursor: pointer; }
+        /* MODAL */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; display: none; justify-content: center; align-items: center; padding: 10px; }
+        .modal-content { background: white; width: 100%; max-width: 350px; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; max-height: 90vh; }
+        .modal-header { background: var(--red); color: white; padding: 15px; font-weight: bold; text-align: center; }
+        #listCheckboxes { flex-grow: 1; overflow-y: auto; padding: 10px; background: #fff; }
+        .modal-footer { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px; background: #f8f8f8; border-top: 1px solid #ddd; }
+        
+        .btn-modal { padding: 8px; border-radius: 4px; border: none; font-weight: bold; cursor: pointer; font-size: 12px; }
+        .btn-all { background: #eee; color: #333; }
+        .btn-none { background: #eee; color: #333; }
+        .btn-clear { background: #333; color: white; grid-column: span 1; }
+        .btn-close { background: #666; color: white; }
+        .btn-apply { background: var(--red); color: white; grid-column: span 2; padding: 12px; font-size: 14px; margin-top: 5px; }
+
+        @media (max-width: 600px) {
+            .header h1 { font-size: 18px; margin-top: 40px; }
+            .back-btn, .exit-btn { top: 10px; }
+            .card { min-height: 250px; }
+        }
     </style>
 </head>
 <body>
@@ -78,12 +92,12 @@
                 <th style="display:none">QTD</th> 
             </tr>
             <tr id="filterRow">
-                <th><button class="filter-btn" onclick="openModal(0,'DATA')">FILTRAR</button></th>
-                <th><button class="filter-btn" onclick="openModal(1,'EXPEDIÇÃO')">FILTRAR</button></th>
-                <th><button class="filter-btn" onclick="openModal(2,'PLACA')">FILTRAR</button></th>
-                <th><button class="filter-btn" onclick="openModal(3,'DESTINO')">FILTRAR</button></th>
-                <th><button class="filter-btn" onclick="openModal(4,'VEICULO')">FILTRAR</button></th>
-                <th><button class="filter-btn" onclick="openModal(5,'EQUIPE')">FILTRAR</button></th>
+                <th><button class="filter-btn" data-col="0" onclick="openModal(0,'DATA')">FILTRAR</button></th>
+                <th><button class="filter-btn" data-col="1" onclick="openModal(1,'EXPEDIÇÃO')">FILTRAR</button></th>
+                <th><button class="filter-btn" data-col="2" onclick="openModal(2,'PLACA')">FILTRAR</button></th>
+                <th><button class="filter-btn" data-col="3" onclick="openModal(3,'DESTINO')">FILTRAR</button></th>
+                <th><button class="filter-btn" data-col="4" onclick="openModal(4,'VEICULO')">FILTRAR</button></th>
+                <th><button class="filter-btn" data-col="5" onclick="openModal(5,'EQUIPE')">FILTRAR</button></th>
                 <th style="display:none"></th>
             </tr>
         </thead>
@@ -94,10 +108,13 @@
 <div id="modalFiltro" class="modal-overlay">
     <div class="modal-content">
         <div class="modal-header" id="modalTitle">FILTRAR</div>
-        <div id="listCheckboxes" style="max-height: 300px; overflow-y: auto; padding: 10px;"></div>
+        <div id="listCheckboxes"></div>
         <div class="modal-footer">
-            <button class="btn-fechar" onclick="$('#modalFiltro').hide()">FECHAR</button>
-            <button class="btn-aplicar" onclick="aplicarFiltro()">APLICAR FILTRO</button>
+            <button class="btn-modal btn-all" onclick="toggleAll(true)">TODOS</button>
+            <button class="btn-modal btn-none" onclick="toggleAll(false)">NENHUM</button>
+            <button class="btn-modal btn-clear" onclick="limparColuna()">LIMPAR</button>
+            <button class="btn-modal btn-close" onclick="$('#modalFiltro').hide()">FECHAR</button>
+            <button class="btn-modal btn-apply" onclick="aplicarFiltro()">APLICAR FILTRO</button>
         </div>
     </div>
 </div>
@@ -116,19 +133,17 @@ function fetchData() {
         download: true, header: true, skipEmptyLines: true,
         complete: res => {
             const todosOsDados = res.data;
-            
-            // Cálculo do volume total (SIM + NÃO)
             const totalSet = new Set();
             todosOsDados.forEach(r => { 
                 if(r.DATA && r.QTD) totalSet.add(`${r.DATA}_${r.QTD}`); 
             });
             totalCargasBase = totalSet.size;
 
-            // Filtrar apenas o que é AVARIA = SIM
             const apenasAvarias = todosOsDados.filter(r => (r.AVARIA || "").toUpperCase().trim() === "SIM");
-            
             montarTabela(apenasAvarias);
-            // Chamada imediata para renderizar gráficos no load
+            
+            // Recuperar filtros salvos após montar a tabela
+            carregarFiltrosSalvos();
             atualizarDashboards();
         }
     });
@@ -149,30 +164,20 @@ function montarTabela(dados) {
     });
 
     table = $('#tabelaAvarias').DataTable({
-        paging: false, 
-        info: false, 
-        scrollX: true, 
-        ordering: true, 
-        orderCellsTop: true,
+        paging: false, info: false, scrollX: true, ordering: true, orderCellsTop: true,
         language: { search: "Pesquisar:" },
-        drawCallback: function() { 
-            // Esta função garante que, ao digitar no "Pesquisar" nativo, os gráficos também atualizem
-            atualizarDashboards(); 
-        }
+        drawCallback: function() { atualizarDashboards(); }
     });
 }
 
 function atualizarDashboards() {
     if (!table) return;
-
-    // Obtém dados visíveis após qualquer filtro (modal ou search box)
     const dadosFiltrados = table.rows({ search: 'applied' }).data().toArray();
-    
     const cargasUnicas = new Set();
     const mapEq = {}, mapVeic = {}, mapDest = {};
 
     dadosFiltrados.forEach(r => {
-        const chaveCarga = `${r[0]}_${r[6]}`; // DATA + QTD
+        const chaveCarga = `${r[0]}_${r[6]}`; 
         if(!cargasUnicas.has(chaveCarga)) {
             cargasUnicas.add(chaveCarga);
             if(r[5]) mapEq[r[5]] = (mapEq[r[5]] || 0) + 1;
@@ -183,28 +188,24 @@ function atualizarDashboards() {
 
     const totalAvariasAgora = cargasUnicas.size;
     $("#totalAvarias").text(totalAvariasAgora);
-    
     const perc = totalCargasBase > 0 ? ((totalAvariasAgora / totalCargasBase) * 100).toFixed(1) : 0;
     $("#totalPercent").text(`${perc}% do volume total`);
 
     renderChart('chartVeiculos', 'pie', mapVeic);
     renderChart('chartEquipe', 'bar', mapEq);
-    
     const top5 = Object.entries(mapDest).sort((a,b) => b[1] - a[1]).slice(0, 5);
     renderChart('chartDestinos', 'bar', Object.fromEntries(top5), true);
+    
+    atualizarStatusBotoesFiltro();
 }
 
 function renderChart(id, type, dataObj, destaqueRed = false) {
     if(charts[id]) charts[id].destroy();
-    
     const labels = Object.keys(dataObj);
     const values = Object.values(dataObj);
     const total = values.reduce((a, b) => a + b, 0);
 
-    const ctx = document.getElementById(id);
-    if (!ctx) return;
-
-    charts[id] = new Chart(ctx, {
+    charts[id] = new Chart(document.getElementById(id), {
         type: type,
         data: {
             labels: labels,
@@ -215,17 +216,10 @@ function renderChart(id, type, dataObj, destaqueRed = false) {
         },
         options: {
             maintainAspectRatio: false,
-            animation: { duration: 500 },
             plugins: {
-                legend: { 
-                    display: type === 'pie', 
-                    position: 'bottom', 
-                    labels: { boxWidth: 10, font: { size: 10 } } 
-                },
+                legend: { display: type === 'pie', position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
                 datalabels: {
                     color: type === 'pie' ? '#fff' : '#444',
-                    anchor: type === 'pie' ? 'center' : 'end',
-                    align: type === 'pie' ? 'center' : 'top',
                     font: { weight: 'bold', size: 10 },
                     formatter: (val) => {
                         const p = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
@@ -233,45 +227,96 @@ function renderChart(id, type, dataObj, destaqueRed = false) {
                     }
                 }
             },
-            scales: type === 'bar' ? { 
-                y: { display: false, beginAtZero: true }, 
-                x: { grid: { display: false }, ticks: { font: { size: 9 } } } 
-            } : {}
+            scales: type === 'bar' ? { y: { display: false }, x: { grid: { display: false }, ticks: { font: { size: 9 } } } } : {}
         }
     });
 }
 
+// LÓGICA DE FILTROS MELHORADA
 function openModal(idx, title) {
     curIdx = idx;
     $("#modalTitle").text("FILTRAR: " + title);
     const list = $("#listCheckboxes").empty();
     
-    // Pega valores únicos da coluna baseada no que já está filtrado ou não
+    // Pegar todos os valores únicos que existem na coluna original (sem filtros)
     const uniqueVals = table.column(idx).data().unique().sort().toArray();
+    
+    // Verificar quais estão selecionados atualmente (pelo search do DataTables)
+    const currentSearch = table.column(idx).search();
     
     uniqueVals.forEach(v => {
         if(v.trim() !== "") {
-            list.append(`<label style="display:block; padding:8px; border-bottom:1px solid #eee; cursor:pointer;">
-                <input type="checkbox" value="${v}" checked> ${v}
+            let checked = "checked";
+            if(currentSearch && currentSearch !== "") {
+                const regexVal = '^' + $.fn.dataTable.util.escapeRegex(v) + '$';
+                if(!currentSearch.includes(regexVal)) checked = "";
+            }
+            list.append(`<label style="display:flex; align-items:center; padding:10px; border-bottom:1px solid #eee; cursor:pointer; font-size:13px;">
+                <input type="checkbox" value="${v}" ${checked} style="margin-right:10px; width:18px; height:18px;"> ${v}
             </label>`);
         }
     });
     $("#modalFiltro").css("display", "flex");
 }
 
+function toggleAll(status) {
+    $("#listCheckboxes input").prop("checked", status);
+}
+
 function aplicarFiltro() {
+    const totalCheckboxes = $("#listCheckboxes input").length;
     const selecionados = $("#listCheckboxes input:checked").map(function(){ return this.value; }).get();
     
-    if (selecionados.length === 0) {
-        table.column(curIdx).search("FORCAR_VAZIO").draw();
+    if (selecionados.length === totalCheckboxes) {
+        // Se selecionou tudo, limpa o filtro da coluna
+        table.column(curIdx).search("").draw();
+    } else if (selecionados.length === 0) {
+        table.column(curIdx).search("FORCAR_VAZIO_ABSURDO").draw();
     } else {
-        // Cria regex para busca exata: ^(Opcao1|Opcao2)$
         const regex = selecionados.map(v => '^' + $.fn.dataTable.util.escapeRegex(v) + '$').join('|');
         table.column(curIdx).search(regex, true, false).draw();
     }
     
+    salvarFiltros();
     $("#modalFiltro").hide();
-    // O atualizarDashboards será chamado automaticamente pelo drawCallback do DataTable
+}
+
+function limparColuna() {
+    table.column(curIdx).search("").draw();
+    salvarFiltros();
+    $("#modalFiltro").hide();
+}
+
+function atualizarStatusBotoesFiltro() {
+    $(".filter-btn").each(function() {
+        const col = $(this).data("col");
+        const searchVal = table.column(col).search();
+        if(searchVal && searchVal !== "") {
+            $(this).addClass("active");
+        } else {
+            $(this).removeClass("active");
+        }
+    });
+}
+
+// PERSISTÊNCIA DE DADOS
+function salvarFiltros() {
+    const filtros = [];
+    for(let i=0; i<6; i++) {
+        filtros.push(table.column(i).search());
+    }
+    localStorage.setItem('meusFiltrosAvarias', JSON.stringify(filtros));
+}
+
+function carregarFiltrosSalvos() {
+    const salvos = localStorage.getItem('meusFiltrosAvarias');
+    if(salvos) {
+        const filtros = JSON.parse(salvos);
+        filtros.forEach((f, i) => {
+            if(f) table.column(i).search(f, true, false);
+        });
+        table.draw();
+    }
 }
 
 function fazerLogoff() { 
