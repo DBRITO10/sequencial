@@ -28,10 +28,10 @@
         .table-section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-top: 4px solid var(--red); }
         .table-title { color: var(--red); margin-top: 0; margin-bottom: 15px; font-size: 18px; text-transform: uppercase; font-weight: bold; }
         
-        table.dataTable thead th { background: var(--blue) !important; color: white !important; text-align: center !important; font-size: 12px; text-transform: uppercase; border: 1px solid var(--dark-blue) !important; }
-        table.dataTable tbody td { text-align: center !important; padding: 10px !important; border: 1px solid #eee !important; font-size: 13px; }
+        table.dataTable thead th { background: var(--blue) !important; color: white !important; text-align: center !important; font-size: 11px; text-transform: uppercase; border: 1px solid var(--dark-blue) !important; padding: 10px 5px !important; }
+        table.dataTable tbody td { text-align: center !important; padding: 8px !important; border: 1px solid #eee !important; font-size: 13px; }
 
-        .filter-btn { width: 95%; margin: 4px auto 0; padding: 4px 0; font-size: 10px; background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); border-radius: 3px; cursor: pointer; display: block; }
+        .filter-btn { width: 90%; margin: 4px auto 0; padding: 3px 0; font-size: 9px; background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); border-radius: 3px; cursor: pointer; display: block; }
         .filter-applied { background: #FFD700 !important; color: #000 !important; }
         
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; display: none; justify-content: center; align-items: center; }
@@ -82,27 +82,27 @@
 <script>
 Chart.register(ChartDataLabels);
 const csvUrl = "https://docs.google.com/spreadsheets/d/1-t9-DE1erEwcgZWVHMHq5JWBqWYAnZvh-_01__3fHno/export?format=csv&gid=804780494";
-const colunas = ["DATA", "EXPEDIÇÃO", "PLACA", "DESTINO", "VEICULO", "CARREGAMENTO", "QTD"];
+// Removi a QTD da lista de colunas para não dar erro de contagem na tabela
+const colunasVisiveis = ["DATA", "EXPEDIÇÃO", "PLACA", "DESTINO", "VEICULO", "CARREGAMENTO"];
 let table, charts = {};
 let totalGeralCargas = 0;
+let dadosCompletos = [];
 
 $(document).ready(function() {
     const hRow = $("#headerRow");
-    colunas.forEach((c, i) => {
-        if(c === "QTD") return;
+    colunasVisiveis.forEach((c, i) => {
         hRow.append(`<th>${c}<button class="filter-btn" id="fbtn-${i}" onclick="event.stopPropagation(); openModal(${i},'${c}')">FILTRAR</button></th>`);
     });
 
     Papa.parse(csvUrl, {
         download: true, header: true, skipEmptyLines: true,
         complete: res => {
-            const todos = res.data;
-            // Calcula total geral para a porcentagem do card principal
+            dadosCompletos = res.data;
             const setTotal = new Set();
-            todos.forEach(r => { if(r.DATA && r.QTD) setTotal.add(`${r.DATA}_${r.QTD}`); });
+            dadosCompletos.forEach(r => { if(r.DATA && r.QTD) setTotal.add(`${r.DATA}_${r.QTD}`); });
             totalGeralCargas = setTotal.size;
             
-            inicializarTabela(todos.filter(r => (r.AVARIA || "").toUpperCase().trim() === "SIM"));
+            inicializarTabela(dadosCompletos.filter(r => (r.AVARIA || "").toUpperCase().trim() === "SIM"));
         }
     });
 });
@@ -117,8 +117,7 @@ function inicializarTabela(dadosAvaria) {
             <td>${r.DESTINO || ""}</td>
             <td>${r.VEICULO || ""}</td>
             <td>${r.CARREGAMENTO || ""}</td>
-            <td style="display:none">${r.QTD}</td>
-        </tr>`);
+            <td style="display:none">${r.QTD}</td> </tr>`);
     });
 
     table = $('#tabelaAvarias').DataTable({ 
@@ -133,12 +132,13 @@ function atualizarDashboards() {
     const mapEquipe = {}, mapVeiculo = {}, mapDestino = {};
 
     rows.forEach(r => {
-        const chave = `${r[0]}_${r[6]}`; // DATA_QTD
+        // r[6] é a coluna QTD que está oculta
+        const chave = `${r[0]}_${r[6]}`; 
         if(!cargasUnicas.has(chave)) {
             cargasUnicas.add(chave);
-            mapEquipe[r[5]] = (mapEquipe[r[5]] || 0) + 1;
-            mapVeiculo[r[4]] = (mapVeiculo[r[4]] || 0) + 1;
-            mapDestino[r[3]] = (mapDestino[r[3]] || 0) + 1;
+            if(r[5]) mapEquipe[r[5]] = (mapEquipe[r[5]] || 0) + 1;
+            if(r[4]) mapVeiculo[r[4]] = (mapVeiculo[r[4]] || 0) + 1;
+            if(r[3]) mapDestino[r[3]] = (mapDestino[r[3]] || 0) + 1;
         }
     });
 
@@ -149,15 +149,12 @@ function atualizarDashboards() {
 
     renderChart('chartVeiculos', 'pie', mapVeiculo);
     renderChart('chartEquipe', 'bar', mapEquipe);
-    
-    // Top 5 Destinos
     const top5Destinos = Object.entries(mapDestino).sort((a,b) => b[1] - a[1]).slice(0, 5);
     renderChart('chartDestinos', 'bar', Object.fromEntries(top5Destinos), true);
 }
 
 function renderChart(id, type, dataObj, isDestino = false) {
     if(charts[id]) charts[id].destroy();
-    
     const labels = Object.keys(dataObj);
     const values = Object.values(dataObj);
     const total = values.reduce((a, b) => a + b, 0);
@@ -173,19 +170,19 @@ function renderChart(id, type, dataObj, isDestino = false) {
         },
         options: {
             plugins: {
-                legend: { display: type === 'pie' || type === 'doughnut' },
+                legend: { display: type === 'pie', position: 'bottom' },
                 datalabels: {
                     color: '#fff',
-                    font: { weight: 'bold', size: 11 },
+                    font: { weight: 'bold', size: 10 },
                     formatter: (value) => {
                         const p = ((value / total) * 100).toFixed(1);
-                        return type === 'pie' ? `${value}\n(${p}%)` : `${value}`;
+                        return `${value} (${p}%)`;
                     }
                 }
             },
             scales: type === 'bar' ? { 
                 y: { display: false }, 
-                x: { grid: { display: false }, ticks: { font: { size: 10 } } } 
+                x: { grid: { display: false }, ticks: { font: { size: 9 } } } 
             } : {}
         }
     });
@@ -199,13 +196,13 @@ function openModal(idx, title) {
     uniqueVals.forEach(v => {
         list.append(`<label style="display:block; padding:8px; border-bottom:1px solid #eee;"><input type="checkbox" value="${v}" checked> ${v}</label>`);
     });
-    $("#modalFiltro").show();
+    $("#modalFiltro").css("display", "flex");
 }
 
 function aplicarFiltro() {
     const sel = $("#listCheckboxes input:checked").map(function(){ return this.value; }).get();
     const regex = sel.map(v => '^' + $.fn.dataTable.util.escapeRegex(v) + '$').join('|');
-    table.column(curIdx).search(regex, true, false).draw();
+    table.column(curIdx).search(sel.length ? regex : 'NONE', true, false).draw();
     $(`#fbtn-${curIdx}`).addClass("filter-applied");
     $("#modalFiltro").hide();
 }
