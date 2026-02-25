@@ -3,17 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <title>DASHBOARD DE AVARIAS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css" />
+
     <style>
-        :root { --red: #b30000; --blue: #004080; --bg: #f0f4f8; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
-        .header { background: var(--red); color: white; padding: 20px; text-align: center; border-radius: 8px; margin-bottom: 20px; position: relative;}
-        .back-btn { position: absolute; left: 20px; top: 25px; color: white; text-decoration: none; font-weight: bold; border: 1px solid white; padding: 5px 15px; border-radius: 4px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }
-        .big-number { font-size: 48px; font-weight: bold; color: var(--red); }
-        canvas { max-height: 300px; }
+        :root { --red: #b30000; --blue: #004080; --dark-blue: #002d5a; --bg: #f0f4f8; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 15px; }
+        
+        /* Cabeçalho */
+        .header { background: var(--red); color: white; padding: 20px; text-align: center; border-radius: 8px; margin-bottom: 20px; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .back-btn { position: absolute; left: 20px; top: 25px; color: white; text-decoration: none; font-weight: bold; border: 1px solid white; padding: 6px 15px; border-radius: 4px; transition: 0.3s; }
+        .back-btn:hover { background: white; color: var(--red); }
+
+        /* Cards e Gráficos */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center; }
+        .big-number { font-size: 42px; font-weight: bold; color: var(--red); margin: 10px 0; }
+        canvas { max-height: 250px; width: 100% !important; }
+
+        /* Tabela Estilo Histórico */
+        .table-section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .table-title { color: var(--blue); margin-top: 0; border-bottom: 2px solid var(--red); display: inline-block; padding-bottom: 5px; margin-bottom: 15px; font-size: 18px; }
+        
+        table.dataTable thead th { 
+            background: var(--blue) !important; color: white !important; 
+            text-align: center !important; padding: 12px !important; 
+            font-size: 12px; text-transform: uppercase; border: 1px solid var(--dark-blue) !important;
+        }
+        table.dataTable tbody td { text-align: center !important; padding: 10px !important; border: 1px solid #eee !important; font-size: 13px; }
+
+        /* Filtros e Modais (Igual ao histórico) */
+        .filter-btn { width: 95%; margin: 4px auto 0; padding: 4px 0; font-size: 10px; background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); border-radius: 3px; cursor: pointer; display: block; }
+        .filter-applied { background: #FFD700 !important; color: #000 !important; }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; display: none; justify-content: center; align-items: center; }
+        .modal-content { background: white; width: 320px; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
+        .modal-header { background: var(--blue); color: white; padding: 15px; font-weight: bold; text-align: center; }
+        .modal-footer { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 15px; background: #f1f1f1; }
+        .btn-aplicar { grid-column: span 2; background: var(--red); color: white; border: none; padding: 10px; border-radius: 5px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -25,85 +57,148 @@
 
 <div class="grid">
     <div class="card">
-        <h3>TOTAL DE CARGAS COM AVARIA</h3>
+        <h3>CARGAS COM AVARIA</h3>
         <div id="totalAvarias" class="big-number">0</div>
-        <p>Apenas itens marcados como "SIM"</p>
+        <p style="font-size: 12px; color: #666;">Contagem por Data + ID</p>
     </div>
-
     <div class="card">
-        <h3>AVARIAS POR VEÍCULO</h3>
+        <h3>TOP EQUIPE (AVARIAS)</h3>
+        <canvas id="chartEquipe"></canvas>
+    </div>
+    <div class="card">
+        <h3>VEÍCULOS AFETADOS</h3>
         <canvas id="chartVeiculos"></canvas>
     </div>
+</div>
 
-    <div class="card">
-        <h3>AVARIAS POR DESTINO (TOP 5)</h3>
-        <canvas id="chartDestinos"></canvas>
+<div class="table-section">
+    <h3 class="table-title">DETALHAMENTO DAS CARGAS AVARIADAS</h3>
+    <table id="tabelaAvarias" class="display nowrap" style="width:100%">
+        <thead>
+            <tr id="headerRow"></tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<div id="modalFiltro" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header" id="modalTitle">FILTRAR</div>
+        <div id="listCheckboxes" style="max-height: 300px; overflow-y: auto; padding: 10px;"></div>
+        <div class="modal-footer">
+            <button onclick="limparFiltroColuna()">LIMPAR</button>
+            <button onclick="$('#modalFiltro').hide()">FECHAR</button>
+            <button class="btn-aplicar" onclick="aplicarFiltro()">APLICAR FILTRO</button>
+        </div>
     </div>
 </div>
 
 <script>
 const csvUrl = "https://docs.google.com/spreadsheets/d/1-t9-DE1erEwcgZWVHMHq5JWBqWYAnZvh-_01__3fHno/export?format=csv&gid=804780494";
+const colunas = ["DATA", "EXPEDIÇÃO", "PLACA", "DESTINO", "VEICULO", "CARREGAMENTO"];
+let table, curIdx;
 
-Papa.parse(csvUrl, {
-    download: true,
-    header: true,
-    complete: function(results) {
-        processarDados(results.data);
-    }
+$(document).ready(function() {
+    // Criar Cabeçalho
+    const hRow = $("#headerRow");
+    colunas.forEach((c, i) => {
+        hRow.append(`<th>${c}<button class="filter-btn" id="fbtn-${i}" onclick="event.stopPropagation(); openModal(${i},'${c}')">FILTRAR</button></th>`);
+    });
+
+    Papa.parse(csvUrl, {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: res => processarDados(res.data)
+    });
 });
 
 function processarDados(dados) {
-    // Filtra apenas onde AVARIA é SIM
+    // 1. Filtrar apenas o que tem AVARIA = SIM
     const avariados = dados.filter(r => (r.AVARIA || "").toUpperCase().trim() === "SIM");
     
-    // Contagem única por Data + QTD (sua regra de ouro)
+    // 2. Popular Tabela
+    const body = $("#tabelaAvarias tbody");
+    avariados.forEach(r => {
+        body.append(`<tr>
+            <td>${r.DATA || ""}</td>
+            <td>${r["EXPEDIÇÃO"] || r.EXPEDICAO || ""}</td>
+            <td>${r.PLACA || ""}</td>
+            <td>${r.DESTINO || ""}</td>
+            <td>${r.VEICULO || ""}</td>
+            <td>${r.CARREGAMENTO || ""}</td>
+        </tr>`);
+    });
+
+    table = $('#tabelaAvarias').DataTable({ 
+        paging: false, info: false, dom: 'rt', scrollX: true, ordering: true 
+    });
+
+    // 3. Cálculos para os Gráficos (Usando a regra de Data + QTD)
     const cargasUnicas = new Set();
-    const veiculosCount = {};
-    const destinosCount = {};
+    const equipeMap = {};
+    const veiculoMap = {};
 
     avariados.forEach(r => {
-        const chave = `${r.DATA}_${r.QTD}`;
-        if (!cargasUnicas.has(chave)) {
-            cargasUnicas.add(chave);
-            
-            // Agrupar por veículo
-            const v = r.VEICULO || "NÃO INFORMADO";
-            veiculosCount[v] = (veiculosCount[v] || 0) + 1;
-
-            // Agrupar por destino
-            const d = r.DESTINO || "OUTROS";
-            destinosCount[d] = (destinosCount[d] || 0) + 1;
+        const chaveCarga = `${r.DATA}_${r.QTD}`;
+        if(!cargasUnicas.has(chaveCarga)) {
+            cargasUnicas.add(chaveCarga);
+            const eq = r.CARREGAMENTO || "NÃO INF.";
+            const vc = r.VEICULO || "NÃO INF.";
+            equipeMap[eq] = (equipeMap[eq] || 0) + 1;
+            veiculoMap[vc] = (veiculoMap[vc] || 0) + 1;
         }
     });
 
-    document.getElementById('totalAvarias').innerText = cargasUnicas.size;
+    $("#totalAvarias").text(cargasUnicas.size);
+
+    // Gráfico de Equipes
+    new Chart(document.getElementById('chartEquipe'), {
+        type: 'bar',
+        data: {
+            labels: Object.keys(equipeMap),
+            datasets: [{ label: 'Cargas', data: Object.values(equipeMap), backgroundColor: '#004080' }]
+        },
+        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
 
     // Gráfico de Veículos
     new Chart(document.getElementById('chartVeiculos'), {
-        type: 'pie',
+        type: 'doughnut',
         data: {
-            labels: Object.keys(veiculosCount),
-            datasets: [{
-                data: Object.values(veiculosCount),
-                backgroundColor: ['#004080', '#b30000', '#ff6600', '#28a745', '#6f42c1']
-            }]
+            labels: Object.keys(veiculoMap),
+            datasets: [{ data: Object.values(veiculoMap), backgroundColor: ['#b30000', '#ff6600', '#28a745', '#004080'] }]
         }
     });
+}
 
-    // Gráfico de Destinos (Top 5)
-    const topDestinos = Object.entries(destinosCount).sort((a,b) => b[1] - a[1]).slice(0, 5);
-    new Chart(document.getElementById('chartDestinos'), {
-        type: 'bar',
-        data: {
-            labels: topDestinos.map(x => x[0]),
-            datasets: [{
-                label: 'Qtd de Cargas',
-                data: topDestinos.map(x => x[1]),
-                backgroundColor: '#b30000'
-            }]
-        },
-        options: { scales: { y: { beginAtZero: true } } }
+// Funções de Filtro (Mesma lógica do histórico)
+function openModal(idx, title) {
+    curIdx = idx;
+    $("#modalTitle").text(title);
+    const list = $("#listCheckboxes").empty();
+    const uniqueVals = table.column(idx).data().unique().sort().toArray();
+    
+    uniqueVals.forEach(v => {
+        list.append(`<label style="display:block; padding:8px; border-bottom:1px solid #eee;">
+            <input type="checkbox" value="${v}" checked> ${v}
+        </label>`);
     });
+    $("#modalFiltro").css("display", "flex");
+}
+
+function aplicarFiltro() {
+    const sel = $("#listCheckboxes input:checked").map(function(){ return this.value; }).get();
+    const regex = sel.map(v => '^' + $.fn.dataTable.util.escapeRegex(v) + '$').join('|');
+    table.column(curIdx).search(regex, true, false).draw();
+    $(`#fbtn-${curIdx}`).addClass("filter-applied");
+    $("#modalFiltro").hide();
+}
+
+function limparFiltroColuna() {
+    table.column(curIdx).search('').draw();
+    $(`#fbtn-${curIdx}`).removeClass("filter-applied");
+    $("#modalFiltro").hide();
 }
 </script>
 </body>
