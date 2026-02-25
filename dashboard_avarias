@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>DASHBOARD DE AVARIAS</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <style>
+        :root { --red: #b30000; --blue: #004080; --bg: #f0f4f8; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+        .header { background: var(--red); color: white; padding: 20px; text-align: center; border-radius: 8px; margin-bottom: 20px; position: relative;}
+        .back-btn { position: absolute; left: 20px; top: 25px; color: white; text-decoration: none; font-weight: bold; border: 1px solid white; padding: 5px 15px; border-radius: 4px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }
+        .big-number { font-size: 48px; font-weight: bold; color: var(--red); }
+        canvas { max-height: 300px; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <a href="historico.html" class="back-btn">← VOLTAR</a>
+    <h1>RELATÓRIO DE AVARIAS (MÓVEIS SIMONETTI)</h1>
+</div>
+
+<div class="grid">
+    <div class="card">
+        <h3>TOTAL DE CARGAS COM AVARIA</h3>
+        <div id="totalAvarias" class="big-number">0</div>
+        <p>Apenas itens marcados como "SIM"</p>
+    </div>
+
+    <div class="card">
+        <h3>AVARIAS POR VEÍCULO</h3>
+        <canvas id="chartVeiculos"></canvas>
+    </div>
+
+    <div class="card">
+        <h3>AVARIAS POR DESTINO (TOP 5)</h3>
+        <canvas id="chartDestinos"></canvas>
+    </div>
+</div>
+
+<script>
+const csvUrl = "https://docs.google.com/spreadsheets/d/1-t9-DE1erEwcgZWVHMHq5JWBqWYAnZvh-_01__3fHno/export?format=csv&gid=804780494";
+
+Papa.parse(csvUrl, {
+    download: true,
+    header: true,
+    complete: function(results) {
+        processarDados(results.data);
+    }
+});
+
+function processarDados(dados) {
+    // Filtra apenas onde AVARIA é SIM
+    const avariados = dados.filter(r => (r.AVARIA || "").toUpperCase().trim() === "SIM");
+    
+    // Contagem única por Data + QTD (sua regra de ouro)
+    const cargasUnicas = new Set();
+    const veiculosCount = {};
+    const destinosCount = {};
+
+    avariados.forEach(r => {
+        const chave = `${r.DATA}_${r.QTD}`;
+        if (!cargasUnicas.has(chave)) {
+            cargasUnicas.add(chave);
+            
+            // Agrupar por veículo
+            const v = r.VEICULO || "NÃO INFORMADO";
+            veiculosCount[v] = (veiculosCount[v] || 0) + 1;
+
+            // Agrupar por destino
+            const d = r.DESTINO || "OUTROS";
+            destinosCount[d] = (destinosCount[d] || 0) + 1;
+        }
+    });
+
+    document.getElementById('totalAvarias').innerText = cargasUnicas.size;
+
+    // Gráfico de Veículos
+    new Chart(document.getElementById('chartVeiculos'), {
+        type: 'pie',
+        data: {
+            labels: Object.keys(veiculosCount),
+            datasets: [{
+                data: Object.values(veiculosCount),
+                backgroundColor: ['#004080', '#b30000', '#ff6600', '#28a745', '#6f42c1']
+            }]
+        }
+    });
+
+    // Gráfico de Destinos (Top 5)
+    const topDestinos = Object.entries(destinosCount).sort((a,b) => b[1] - a[1]).slice(0, 5);
+    new Chart(document.getElementById('chartDestinos'), {
+        type: 'bar',
+        data: {
+            labels: topDestinos.map(x => x[0]),
+            datasets: [{
+                label: 'Qtd de Cargas',
+                data: topDestinos.map(x => x[1]),
+                backgroundColor: '#b30000'
+            }]
+        },
+        options: { scales: { y: { beginAtZero: true } } }
+    });
+}
+</script>
+</body>
+</html>
