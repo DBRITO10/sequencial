@@ -21,15 +21,16 @@
         .exit-btn { position: absolute; right: 15px; top: 18px; color: white; background: transparent; border: 1px solid white; padding: 5px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
 
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center; min-height: 320px; }
+        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center; min-height: 300px; display: flex; flex-direction: column; justify-content: center; }
         .big-number { font-size: 48px; font-weight: bold; color: var(--red); margin: 5px 0; }
-        canvas { max-height: 230px !important; width: 100% !important; }
+        
+        canvas { max-height: 220px !important; width: 100% !important; }
 
         .table-section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-top: 4px solid var(--red); }
         .table-title { color: var(--red); margin-top: 0; margin-bottom: 15px; font-size: 18px; text-transform: uppercase; font-weight: bold; }
         
-        /* Ajuste das setas e cabeçalho */
-        table.dataTable thead th { background: var(--blue) !important; color: white !important; padding: 10px !important; font-size: 11px; text-transform: uppercase; border: 1px solid var(--dark-blue) !important; }
+        /* Estilo Cabeçalho Tabela */
+        table.dataTable thead th { background: var(--blue) !important; color: white !important; text-align: center !important; font-size: 11px; text-transform: uppercase; border: 1px solid var(--dark-blue) !important; padding: 10px !important; }
         table.dataTable tbody td { text-align: center !important; padding: 8px !important; border: 1px solid #eee !important; font-size: 13px; }
 
         .filter-btn { width: 90%; margin: 5px auto 0; padding: 3px 0; font-size: 9px; background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); border-radius: 3px; cursor: pointer; display: block; font-weight: bold; }
@@ -46,15 +47,15 @@
 
 <div class="header">
     <a href="historico.html" class="back-btn">← VOLTAR</a>
-    <h1>RELATÓRIO DE AVARIAS (MÓVEIS SIMONETTI)</h1>
+    <h1>DASHBOARD DE AVARIAS (MÓVEIS SIMONETTI)</h1>
     <button class="exit-btn" onclick="fazerLogoff()">SAIR</button>
 </div>
 
 <div class="grid">
     <div class="card">
-        <h3>TOTAL CARGAS (SIM)</h3>
+        <h3>TOTAL CARGAS COM AVARIA</h3>
         <div id="totalAvarias" class="big-number">0</div>
-        <p id="totalPercent" style="font-weight:bold; color: #666;">--% do total</p>
+        <p id="totalPercent" style="font-weight:bold; color: #666;">Calculando...</p>
     </div>
     <div class="card"><h3>AVARIAS POR VEÍCULO</h3><canvas id="chartVeiculos"></canvas></div>
     <div class="card"><h3>TOP 5 DESTINOS</h3><canvas id="chartDestinos"></canvas></div>
@@ -62,7 +63,7 @@
 </div>
 
 <div class="table-section">
-    <h3 class="table-title">DETALHAMENTO DAS CARGAS AVARIADAS</h3>
+    <h3 class="table-title">DETALHAMENTO (SOMENTE AVARIAS SIM)</h3>
     <table id="tabelaAvarias" class="display nowrap" style="width:100%">
         <thead>
             <tr>
@@ -72,9 +73,8 @@
                 <th>DESTINO</th>
                 <th>VEICULO</th>
                 <th>CARREGAMENTO</th>
-                <th style="display:none">QTD</th>
-            </tr>
-            <tr>
+                <th style="display:none">QTD</th> </tr>
+            <tr id="filterRow">
                 <th><button class="filter-btn" onclick="openModal(0,'DATA')">FILTRAR</button></th>
                 <th><button class="filter-btn" onclick="openModal(1,'EXPEDIÇÃO')">FILTRAR</button></th>
                 <th><button class="filter-btn" onclick="openModal(2,'PLACA')">FILTRAR</button></th>
@@ -102,28 +102,33 @@
 <script>
 Chart.register(ChartDataLabels);
 const csvUrl = "https://docs.google.com/spreadsheets/d/1-t9-DE1erEwcgZWVHMHq5JWBqWYAnZvh-_01__3fHno/export?format=csv&gid=804780494";
-let table, charts = {}, curIdx, totalGeralBase = 0;
+let table, charts = {}, curIdx, totalCargasBase = 0;
 
 $(document).ready(function() {
     Papa.parse(csvUrl, {
         download: true, header: true, skipEmptyLines: true,
         complete: res => {
-            const todos = res.data;
-            // Cálculo do total geral de cargas (SIM + NÃO) para a porcentagem
+            const todosOsDados = res.data;
+            
+            // 1. REGRA: Calcular total geral de cargas (SIM e NÃO) para a % do card
             const totalSet = new Set();
-            todos.forEach(r => { if(r.DATA && r.QTD) totalSet.add(`${r.DATA}_${r.QTD}`); });
-            totalGeralBase = totalSet.size;
+            todosOsDados.forEach(r => { 
+                if(r.DATA && r.QTD) totalSet.add(`${r.DATA}_${r.QTD}`); 
+            });
+            totalCargasBase = totalSet.size;
 
-            const avariados = todos.filter(r => (r.AVARIA || "").toUpperCase().trim() === "SIM");
-            popularTabela(avariados);
+            // 2. REGRA: Filtrar a tabela para mostrar APENAS AVARIA = SIM
+            const apenasAvarias = todosOsDados.filter(r => (r.AVARIA || "").toUpperCase().trim() === "SIM");
+            
+            montarTabela(apenasAvarias);
         }
     });
 });
 
-function popularTabela(dados) {
-    const body = $("#tabelaAvarias tbody").empty();
+function montarTabela(dados) {
+    const tbody = $("#tabelaAvarias tbody").empty();
     dados.forEach(r => {
-        body.append(`<tr>
+        tbody.append(`<tr>
             <td>${r.DATA || ""}</td>
             <td>${r["EXPEDIÇÃO"] || r.EXPEDICAO || ""}</td>
             <td>${r.PLACA || ""}</td>
@@ -134,41 +139,47 @@ function popularTabela(dados) {
         </tr>`);
     });
 
+    // Inicializa DataTable com ordenação e scroll
     table = $('#tabelaAvarias').DataTable({
         paging: false, info: false, scrollX: true, ordering: true, orderCellsTop: true,
-        drawCallback: function() { atualizarGraficos(); }
+        drawCallback: function() { atualizarDashboards(); }
     });
 }
 
-function atualizarGraficos() {
-    const rows = table.rows({ search: 'applied' }).data().toArray();
+function atualizarDashboards() {
+    // Pega apenas as linhas que sobraram após o filtro da tabela
+    const dadosFiltrados = table.rows({ search: 'applied' }).data().toArray();
+    
     const cargasUnicas = new Set();
     const mapEq = {}, mapVeic = {}, mapDest = {};
 
-    rows.forEach(r => {
-        const chave = `${r[0]}_${r[6]}`; // DATA + QTD
-        if(!cargasUnicas.has(chave)) {
-            cargasUnicas.add(chave);
+    dadosFiltrados.forEach(r => {
+        const chaveCarga = `${r[0]}_${r[6]}`; // DATA + QTD
+        if(!cargasUnicas.has(chaveCarga)) {
+            cargasUnicas.add(chaveCarga);
             if(r[5]) mapEq[r[5]] = (mapEq[r[5]] || 0) + 1;
             if(r[4]) mapVeic[r[4]] = (mapVeic[r[4]] || 0) + 1;
             if(r[3]) mapDest[r[3]] = (mapDest[r[3]] || 0) + 1;
         }
     });
 
-    const totalAvarias = cargasUnicas.size;
-    $("#totalAvarias").text(totalAvarias);
-    const perc = totalGeralBase > 0 ? ((totalAvarias / totalGeralBase) * 100).toFixed(1) : 0;
-    $("#totalPercent").text(`${perc}% das cargas totais`);
-
-    renderizar('chartVeiculos', 'pie', mapVeic);
-    renderizar('chartEquipe', 'bar', mapEq);
+    const totalAvariasAgora = cargasUnicas.size;
+    $("#totalAvarias").text(totalAvariasAgora);
     
-    const top5Dest = Object.entries(mapDest).sort((a,b) => b[1] - a[1]).slice(0, 5);
-    renderizar('chartDestinos', 'bar', Object.fromEntries(top5Dest), true);
+    // Porcentagem em relação ao total da planilha
+    const perc = totalCargasBase > 0 ? ((totalAvariasAgora / totalCargasBase) * 100).toFixed(1) : 0;
+    $("#totalPercent").text(`${perc}% do volume total de cargas`);
+
+    // Atualiza Gráficos com os novos dados filtrados
+    renderChart('chartVeiculos', 'pie', mapVeic);
+    renderChart('chartEquipe', 'bar', mapEq);
+    const top5 = Object.entries(mapDest).sort((a,b) => b[1] - a[1]).slice(0, 5);
+    renderChart('chartDestinos', 'bar', Object.fromEntries(top5), true);
 }
 
-function renderizar(id, type, dataObj, isDestino = false) {
+function renderChart(id, type, dataObj, destaqueRed = false) {
     if(charts[id]) charts[id].destroy();
+    
     const labels = Object.keys(dataObj);
     const values = Object.values(dataObj);
     const total = values.reduce((a, b) => a + b, 0);
@@ -179,19 +190,19 @@ function renderizar(id, type, dataObj, isDestino = false) {
             labels: labels,
             datasets: [{
                 data: values,
-                backgroundColor: isDestino ? '#b30000' : ['#b30000', '#004080', '#ff6600', '#28a745', '#6f42c1']
+                backgroundColor: destaqueRed ? '#b30000' : ['#b30000', '#004080', '#ff6600', '#28a745', '#6f42c1']
             }]
         },
         options: {
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: type === 'pie', position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } },
+                legend: { display: type === 'pie', position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
                 datalabels: {
                     color: '#fff',
                     font: { weight: 'bold', size: 11 },
                     formatter: (val) => {
                         const p = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
-                        return type === 'pie' ? `${val}\n(${p}%)` : `${val}`;
+                        return type === 'pie' ? `${val}\n(${p}%)` : `${val} (${p}%)`;
                     }
                 }
             },
@@ -207,7 +218,8 @@ function openModal(idx, title) {
     curIdx = idx;
     $("#modalTitle").text(title);
     const list = $("#listCheckboxes").empty();
-    const uniqueVals = table.column(idx).data().unique().sort().toArray();
+    const uniqueVals = table.column(idx, {search:'applied'}).data().unique().sort().toArray();
+    
     uniqueVals.forEach(v => {
         list.append(`<label style="display:block; padding:8px; border-bottom:1px solid #eee;"><input type="checkbox" value="${v}" checked> ${v}</label>`);
     });
@@ -215,9 +227,9 @@ function openModal(idx, title) {
 }
 
 function aplicarFiltro() {
-    const sel = $("#listCheckboxes input:checked").map(function(){ return this.value; }).get();
-    const regex = sel.map(v => '^' + $.fn.dataTable.util.escapeRegex(v) + '$').join('|');
-    table.column(curIdx).search(sel.length ? regex : 'NONE', true, false).draw();
+    const selecionados = $("#listCheckboxes input:checked").map(function(){ return this.value; }).get();
+    const regex = selecionados.map(v => '^' + $.fn.dataTable.util.escapeRegex(v) + '$').join('|');
+    table.column(curIdx).search(selecionados.length ? regex : 'NADA_SELECIONADO', true, false).draw();
     $("#modalFiltro").hide();
 }
 
